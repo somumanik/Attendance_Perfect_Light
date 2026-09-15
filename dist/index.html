@@ -43,8 +43,8 @@
   select option:checked { background: #3730a3; color: #ffffff; }
   select option:hover { background: #312e81; color: #ffffff; }
 </style>
-  <script type="module" crossorigin src="/assets/index-BVFs9V3Q.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-CzqgmZiX.css">
+  <script type="module" crossorigin src="/assets/index-CXETqnoW.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-DOdpun1S.css">
 </head>
 <body class="gradient-bg min-h-screen text-slate-100">
 <div id="react-root" hidden></div>
@@ -1023,7 +1023,7 @@
     <div id="marStep1" class="space-y-4">
       <div class="p-3.5 rounded-2xl bg-teal-950/30 border border-teal-500/20 text-[11px] text-slate-300 leading-relaxed flex gap-2.5">
         <i class="fas fa-circle-info text-teal-400 mt-0.5 shrink-0"></i>
-        <span>Expected columns: <strong class="text-white">EmployeeCode</strong> OR <strong class="text-white">BiometricCode</strong>, plus <strong class="text-white">MarriageAnniversaryDate</strong> (DD-MM-YYYY / YYYY-MM-DD / real Excel date). Import invalid ya unmatched rows ko skip karega aur summary dikhayega.</span>
+        <span>Expected columns: <strong class="text-white">Paycode</strong> (primary matching key) + <strong class="text-white">EmployeeName</strong> (display only, matching ke liye use nahi hota) + <strong class="text-white">MarriageDate</strong> (DD-MM-YYYY / YYYY-MM-DD / real Excel date). Duplicate Paycode, invalid dates aur unmatched rows skip honge — New / Update / Unchanged summary preview me dikhega.</span>
       </div>
       <div id="marDrop" class="drop-zone rounded-3xl p-8 text-center cursor-pointer" onclick="document.getElementById('marFileInput').click()">
         <i class="fas fa-cloud-arrow-up text-3xl text-teal-300 mb-3"></i>
@@ -1042,17 +1042,19 @@
 
     <!-- STEP 2 : PREVIEW + VALIDATION -->
     <div id="marStep2" class="hidden space-y-4">
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
         <div class="p-3.5 rounded-2xl bg-white/5 border border-white/5 text-center"><p class="text-2xl font-extrabold text-white" id="marTotal">0</p><p class="text-[10px] text-slate-400 uppercase font-bold mt-1">Total Rows</p></div>
-        <div class="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-center"><p class="text-2xl font-extrabold text-emerald-400" id="marMatched">0</p><p class="text-[10px] text-slate-400 uppercase font-bold mt-1">Matched</p></div>
-        <div class="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-center"><p class="text-2xl font-extrabold text-amber-400" id="marUnmatched">0</p><p class="text-[10px] text-slate-400 uppercase font-bold mt-1">Unmatched</p></div>
+        <div class="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-center"><p class="text-2xl font-extrabold text-emerald-400" id="marMatched">0</p><p class="text-[10px] text-slate-400 uppercase font-bold mt-1">Valid (New/Update)</p></div>
+        <div class="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-center"><p class="text-2xl font-extrabold text-amber-400" id="marUnmatched">0</p><p class="text-[10px] text-slate-400 uppercase font-bold mt-1">Employee Not Found</p></div>
         <div class="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-center"><p class="text-2xl font-extrabold text-rose-400" id="marInvalid">0</p><p class="text-[10px] text-slate-400 uppercase font-bold mt-1">Invalid Dates</p></div>
+        <div class="p-3.5 rounded-2xl bg-orange-500/10 border border-orange-500/20 text-center"><p class="text-2xl font-extrabold text-orange-400" id="marDuplicate">0</p><p class="text-[10px] text-slate-400 uppercase font-bold mt-1">Duplicate Paycode</p></div>
       </div>
       <div class="flex flex-wrap items-center gap-2">
         <button onclick="setMarPreviewFilter('all')" id="marFAll" class="tabbtn active px-3 py-1.5 rounded-xl text-[11px] font-bold text-slate-400">All</button>
-        <button onclick="setMarPreviewFilter('matched')" id="marFMatched" class="tabbtn px-3 py-1.5 rounded-xl text-[11px] font-bold text-slate-400">Matched Only</button>
-        <button onclick="setMarPreviewFilter('unmatched')" id="marFUnmatched" class="tabbtn px-3 py-1.5 rounded-xl text-[11px] font-bold text-slate-400">Unmatched</button>
+        <button onclick="setMarPreviewFilter('matched')" id="marFMatched" class="tabbtn px-3 py-1.5 rounded-xl text-[11px] font-bold text-slate-400">Valid Only</button>
+        <button onclick="setMarPreviewFilter('unmatched')" id="marFUnmatched" class="tabbtn px-3 py-1.5 rounded-xl text-[11px] font-bold text-slate-400">Not Found</button>
         <button onclick="setMarPreviewFilter('invalid')" id="marFInvalid" class="tabbtn px-3 py-1.5 rounded-xl text-[11px] font-bold text-slate-400">Invalid Dates</button>
+        <button onclick="setMarPreviewFilter('duplicate')" id="marFDuplicate" class="tabbtn px-3 py-1.5 rounded-xl text-[11px] font-bold text-slate-400">Duplicates</button>
       </div>
       <div class="overflow-x-auto max-h-80 rounded-2xl border border-white/10">
         <table class="w-full text-left text-xs">
@@ -3020,14 +3022,14 @@ function handleMarriageFile(ev){
 
 /* Sample sheet so HR can preview the whole workflow without a real file */
 function loadSampleMarriageRows(){
-  const grid = [['EmployeeCode','BiometricCode','MarriageAnniversaryDate']];
+  const grid = [['Paycode','EmployeeName','MarriageDate']];
   const picks = employees.slice(0, 6);
   picks.forEach((e, i) => {
     const d = new Date(); d.setDate(d.getDate() + (i === 0 ? 0 : i === 1 ? 3 : i === 2 ? 12 : -20));
-    grid.push([e.paycode, e.presentcardno, pad(d.getDate()) + '-' + pad(d.getMonth()+1) + '-' + (2005 + i)]);
+    grid.push([e.paycode, e.empname, pad(d.getDate()) + '-' + pad(d.getMonth()+1) + '-' + (2005 + i)]);
   });
-  grid.push(['EMP999', '999', '15-02-2015']);          // unmatched
-  grid.push(['EMP002', '102', '32-13-2018']);          // invalid date
+  grid.push(['EMP999', 'UNKNOWN PERSON', '15-02-2015']);   // unmatched
+  grid.push(['EMP002', 'BAD DATE ROW', '32-13-2018']);     // invalid date
   processMarriageGrid(grid);
 }
 
@@ -3092,6 +3094,16 @@ async function processMarriageGrid(grid){
     showToast('Import Error', 'Server employee validation unavailable.');
     return;
   }
+
+  // In-file duplicate Paycode detection — pehli occurrence hi import hogi
+  const seenPay = new Set();
+  marRows.forEach(r => {
+    const key = paykey(r.emp && r.emp.paycode ? r.emp.paycode : r.codeRaw).toLowerCase();
+    if (!key) return;
+    if (seenPay.has(key)) { r.state = 'duplicate'; r.reason = 'Duplicate Paycode in file (first occurrence will be imported)'; }
+    else seenPay.add(key);
+  });
+
   renderMarPreview();
   document.getElementById('marStep1').classList.add('hidden');
   document.getElementById('marStep2').classList.remove('hidden');
@@ -3100,7 +3112,7 @@ async function processMarriageGrid(grid){
 
 function setMarPreviewFilter(f){
   marPreviewFilter = f;
-  ['all','matched','unmatched','invalid'].forEach(k => {
+  ['all','matched','unmatched','invalid','duplicate'].forEach(k => {
     const el = document.getElementById('marF' + k.charAt(0).toUpperCase() + k.slice(1));
     if (el) el.classList.toggle('active', k === f);
   });
@@ -3111,20 +3123,26 @@ function renderMarPreview(){
   const matched = marRows.filter(r => r.state === 'matched');
   const unmatched = marRows.filter(r => r.state === 'unmatched');
   const invalid = marRows.filter(r => r.state === 'invalid');
+  const duplicates = marRows.filter(r => r.state === 'duplicate');
   document.getElementById('marTotal').textContent = marRows.length;
   document.getElementById('marMatched').textContent = matched.length;
   document.getElementById('marUnmatched').textContent = unmatched.length;
   document.getElementById('marInvalid').textContent = invalid.length;
+  document.getElementById('marDuplicate').textContent = duplicates.length;
 
   const tb = document.getElementById('marPreviewTable'); tb.innerHTML = '';
   const list = marRows.filter(r => marPreviewFilter === 'all' ? true : (marPreviewFilter === 'matched' ? r.state === 'matched' : r.state === marPreviewFilter));
   if (!list.length) { tb.innerHTML = '<tr><td colspan="7" class="py-6 text-center text-slate-500">Is filter me koi row nahi.</td></tr>'; }
   list.forEach(r => {
     const badge = r.state === 'matched'
-      ? '<span class="chip bg-emerald-500/15 border border-emerald-500/30 text-emerald-300"><i class="fas fa-check"></i>Matched</span>'
-      : r.state === 'unmatched'
-        ? '<span class="chip bg-amber-500/15 border border-amber-500/30 text-amber-300"><i class="fas fa-user-slash"></i>Unmatched Employee</span>'
-        : '<span class="chip bg-rose-500/15 border border-rose-500/30 text-rose-300"><i class="fas fa-triangle-exclamation"></i>Invalid Date</span>';
+      ? (r.emp && r.emp.existingDate
+          ? '<span class="chip bg-sky-500/15 border border-sky-500/30 text-sky-300"><i class="fas fa-rotate"></i>Update</span><span class="ml-1.5 text-[10px] text-slate-400">Existing: ' + esc(pretty(r.emp.existingDate)) + '</span>'
+          : '<span class="chip bg-emerald-500/15 border border-emerald-500/30 text-emerald-300"><i class="fas fa-check"></i>New</span>')
+      : r.state === 'duplicate'
+        ? '<span class="chip bg-orange-500/15 border border-orange-500/30 text-orange-300"><i class="fas fa-clone"></i>Duplicate Paycode</span>'
+        : r.state === 'unmatched'
+          ? '<span class="chip bg-amber-500/15 border border-amber-500/30 text-amber-300"><i class="fas fa-user-slash"></i>Unmatched Employee</span>'
+          : '<span class="chip bg-rose-500/15 border border-rose-500/30 text-rose-300"><i class="fas fa-triangle-exclamation"></i>Invalid Date</span>';
     tb.innerHTML += `<tr class="table-row transition">
       <td class="py-2 px-3 text-slate-500 mono">${r.line}</td>
       <td class="py-2 px-3 mono text-slate-300">${esc(r.codeRaw || '—')}</td>
@@ -3156,36 +3174,43 @@ async function confirmMarriageImport(){
     });
     if (!validation.ok) throw new Error('Validation service unavailable');
     const validated = await validation.json();
+    // New vs Update vs Unchanged — DB me already stored date (validate endpoint) se decide hota hai
     const validRows = (validated.rows || []).filter(r => r.employee);
-    const imported = await apiFetch('/marriage-anniversary/import', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ importedBy: 'HR001', rows: validRows })
-    });
-    if (!imported.ok) throw new Error('Import service unavailable');
-    const result = await imported.json();
-    const refreshed = await apiFetch('/marriage-anniversary');
-    marriageAnniversaries = refreshed.ok ? await refreshed.json() : marriageAnniversaries;
-    const now = todayISO();
+    const isNew = r => !r.employee.existingDate;
+    const isChanged = r => r.employee.existingDate && String(r.employee.existingDate).slice(0, 10) !== String(r.anniversaryDate || '').slice(0, 10);
+    const toImport = validRows.filter(r => isNew(r) || isChanged(r));   // unchanged rows skip — DB touch nahi hota
     const summary = {
       total: marRows.length,
-      matched: result.imported || 0,
-      unmatched: marRows.filter(r => r.state === 'unmatched').length,
-      invalid: marRows.filter(r => r.state === 'invalid').length
+      imported: toImport.length,
+      fresh: validRows.filter(isNew).length,
+      updated: validRows.filter(isChanged).length,
+      unchanged: validRows.length - toImport.length,
+      skipped: marRows.length - validRows.length
     };
+    if (toImport.length) {
+      const imported = await apiFetch('/marriage-anniversary/import', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ importedBy: 'HR001', rows: toImport })
+      });
+      if (!imported.ok) throw new Error('Import service unavailable');
+      await imported.json();
+    }
+    const refreshed = await apiFetch('/marriage-anniversary');
+    marriageAnniversaries = refreshed.ok ? await refreshed.json() : marriageAnniversaries;
 
     const box = document.getElementById('marImportSummary');
     box.innerHTML = `
       <div class="p-3.5 rounded-2xl bg-white/5 border border-white/5 text-center"><p class="text-2xl font-extrabold text-white">${summary.total}</p><p class="text-[10px] text-slate-400 uppercase font-bold mt-1">Total Rows</p></div>
-      <div class="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-center"><p class="text-2xl font-extrabold text-emerald-400">${summary.matched}</p><p class="text-[10px] text-slate-400 uppercase font-bold mt-1">Imported</p></div>
-      <div class="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-center"><p class="text-2xl font-extrabold text-amber-400">${summary.unmatched}</p><p class="text-[10px] text-slate-400 uppercase font-bold mt-1">Unmatched (skipped)</p></div>
-      <div class="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-center"><p class="text-2xl font-extrabold text-rose-400">${summary.invalid}</p><p class="text-[10px] text-slate-400 uppercase font-bold mt-1">Invalid Dates (skipped)</p></div>`;
+      <div class="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-center"><p class="text-2xl font-extrabold text-emerald-400">${summary.imported}</p><p class="text-[10px] text-slate-400 uppercase font-bold mt-1">Imported</p><p class="text-[10px] text-emerald-300/80 mt-0.5">${summary.fresh} new • ${summary.updated} update</p></div>
+      <div class="p-3.5 rounded-2xl bg-sky-500/10 border border-sky-500/20 text-center"><p class="text-2xl font-extrabold text-sky-400">${summary.unchanged}</p><p class="text-[10px] text-slate-400 uppercase font-bold mt-1">Unchanged (skipped)</p><p class="text-[10px] text-sky-300/80 mt-0.5">Already same date in DB</p></div>
+      <div class="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-center"><p class="text-2xl font-extrabold text-rose-400">${summary.skipped}</p><p class="text-[10px] text-slate-400 uppercase font-bold mt-1">Skipped</p><p class="text-[10px] text-rose-300/80 mt-0.5">Not found / invalid / duplicate</p></div>`;
 
     document.getElementById('marStep2').classList.add('hidden');
     document.getElementById('marStep3').classList.remove('hidden');
     renderMarriageTable();
     renderCelebrationWidgets();
     if (loggedInEmployee) renderEmpProfile();
-    showToast('Excel Import Complete', summary.matched + ' record(s) import hue, ' + (summary.unmatched + summary.invalid) + ' skip kiye gaye.');
+    showToast('Excel Import Complete', summary.imported + ' record import hue (' + summary.fresh + ' new, ' + summary.updated + ' update), ' + summary.unchanged + ' unchanged, ' + summary.skipped + ' skip.');
   } catch (error) {
     showToast('Import Error', 'Server validation/import unavailable. Records were not imported.');
   } finally {
@@ -3194,8 +3219,8 @@ async function confirmMarriageImport(){
 }
 
 function downloadMarriageTemplate(){
-  const rows = [['EmployeeCode','BiometricCode','MarriageAnniversaryDate']];
-  employees.slice(0, 3).forEach((e, i) => rows.push([e.paycode, e.presentcardno, '15-0' + (i + 2) + '-2015']));
+  const rows = [['Paycode','EmployeeName','MarriageDate']];
+  employees.slice(0, 3).forEach((e, i) => rows.push([e.paycode, e.empname, '15-0' + (i + 2) + '-2015']));
   downloadCSV('marriage-anniversary-template', rows);
 }
 

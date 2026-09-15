@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Savior Attendance Portal
 
 The existing Employee and HR screens keep their current dark/purple and red/purple visual structure. Attendance data is served only through the Node/Express API and is read from Savior Biometric SQL Server.
@@ -19,3 +20,6 @@ Attendance APIs include `/api/employee/daily`, `/api/employee/weekly`, `/api/emp
 For temporary UI development only, set `DEV_EMPLOYEE_AUTH_ENABLED=true` and configure `DEV_EMPLOYEE_PAYCODE` / `DEV_EMPLOYEE_PASSWORD`. This fallback returns a development-only `EMPLOYEE` JWT and no attendance records; set it to `false` before production deployment.
 
 Employee authentication uses the actual `dbo.tblemployee.paycode`; no password column is assumed or added to the Savior tables. HR authentication uses the backend-only `HR_USERNAME` and `HR_PASSWORD` environment variables. Set a strong `JWT_SECRET`, and keep the SQL login read-only except for the separate HR application table required for imports.
+=======
+# Attendance_Perfect_Light
+>>>>>>> 7362d31f4c49996ef22c2a904604a17bd7cd8782

@@ -848,7 +848,7 @@ app.post('/api/marriage-anniversary/validate', authenticate, requireRole('HR'), 
   try {
     const rows = Array.isArray(req.body?.rows) ? req.body.rows : [], pool = await getPool(), validated = [];
     for (const row of rows) {
-      const result = await pool.request().input('employeeCode', sql.VarChar(50), String(row.employeeCode || '').trim() || null).input('biometricCode', sql.VarChar(50), String(row.biometricCode || '').trim() || null).query('SELECT TOP 1 paycode, presentcardno, empname, companycode FROM dbo.tblemployee WHERE (@employeeCode IS NOT NULL AND paycode = @employeeCode) OR (@biometricCode IS NOT NULL AND presentcardno = @biometricCode)');
+      const result = await pool.request().input('employeeCode', sql.VarChar(50), String(row.employeeCode || '').trim() || null).input('biometricCode', sql.VarChar(50), String(row.biometricCode || '').trim() || null).query(`SELECT TOP 1 e.paycode, e.presentcardno, e.empname, e.companycode, m.anniversarydate AS existingDate FROM dbo.tblemployee e LEFT JOIN ${marriageTable} m ON m.paycode = e.paycode WHERE (@employeeCode IS NOT NULL AND e.paycode = @employeeCode) OR (@biometricCode IS NOT NULL AND e.presentcardno = @biometricCode)`);
       validated.push({ ...row, employee: result.recordset[0] || null });
     }
     res.json({ rows: validated });
