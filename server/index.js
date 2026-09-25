@@ -3,6 +3,8 @@ import express from 'express';
 import cors from 'cors';
 import jwt from 'jsonwebtoken';
 import nodemailer from 'nodemailer';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { getDbConfigStatus, getPool, sql } from './db.js';
 // Email credentials + transport live in ONE isolated module (see the header of
 // server/email-provider.js). Everything email-related must go through it, so
@@ -18,6 +20,9 @@ import {
 
 const app = express();
 const PORT = process.env.PORT || process.env.API_PORT || 4000;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const distDir = path.join(__dirname, '..', 'dist');
 const marriageTable = process.env.HR_MARRIAGE_TABLE || 'dbo.HR_MarriageAnniversary';
 const jwtSecret = process.env.JWT_SECRET;
 const hrUsername = process.env.HR_USERNAME;
@@ -2481,6 +2486,13 @@ app.get('/api/email/log', requireDbConfig, authenticate, requireRole('HR'), asyn
     return res.json({ success: true, rows: result.recordset });
   } catch (error) { return emailErrorResponse(res, error); }
 });
+// Serve Vite production frontend from dist, then SPA fallback for non-API routes
+app.use(express.static(distDir));
+app.get('*', (req, res, next) => {
+  if (req.path === '/api' || req.path.startsWith('/api/')) return next();
+  res.sendFile(path.join(distDir, 'index.html'));
+});
+
 // EADDRINUSE ko crash ki jagah clear message banao: user ko exact fix command batao.
 // (npm run server dobara chalane se pehle purana node process band karna hota hai.)
 const server = app.listen(PORT, '0.0.0.0', () => console.log(`Attendance API listening on port ${PORT}`));
