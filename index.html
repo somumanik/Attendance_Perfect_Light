@@ -581,6 +581,7 @@
           <a onclick="showHRSection('hrDaily')" id="hrSide_hrDaily" class="sidebar-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl cursor-pointer text-xs font-semibold text-slate-300 hover:text-white"><i class="fas fa-calendar-day w-4 text-rose-400"></i> Daily Master Report</a>
           <a onclick="showHRSection('hrCelebrations')" id="hrSide_hrCelebrations" class="sidebar-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl cursor-pointer text-xs font-semibold text-slate-300 hover:text-white"><i class="fas fa-cake-candles w-4 text-pink-400"></i> Birthdays &amp; Anniversaries</a>
           <a onclick="showHRSection('hrMarriage')" id="hrSide_hrMarriage" class="sidebar-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl cursor-pointer text-xs font-semibold text-slate-300 hover:text-white"><i class="fas fa-file-excel w-4 text-teal-400"></i> Marriage Anniversary</a>
+          <a onclick="showHRSection('hrEmail')" id="hrSide_hrEmail" class="sidebar-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl cursor-pointer text-xs font-semibold text-slate-300 hover:text-white"><i class="fas fa-envelope w-4 text-violet-400"></i> Email Configuration</a>
           <a onclick="showHRSection('hrLeave')" id="hrSide_hrLeave" class="sidebar-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl cursor-pointer text-xs font-semibold text-slate-300 hover:text-white"><i class="fas fa-clipboard-check w-4 text-sky-400"></i> Leave Management</a>
         </nav>
       </div>
@@ -610,6 +611,14 @@
 
       <!-- ===== HR OVERVIEW ===== -->
       <main id="hrOverview" class="p-4 md:p-6 space-y-6 flex-1 fade-in">
+        <!-- TOP NOTIFICATIONS : aaj ke birthdays / work / marriage anniversaries (real DB data, click = employee audit) -->
+        <div id="hrNotifBar" class="glass-card rounded-2xl p-4 border-l-4 border-l-pink-500">
+          <div class="flex items-center justify-between gap-3 mb-2.5">
+            <h3 class="font-bold text-sm text-white flex items-center gap-2"><i class="fas fa-bell text-pink-400"></i> Notifications</h3>
+            <span class="chip bg-pink-500/15 border border-pink-500/30 text-pink-300" id="hrNotifCount">0</span>
+          </div>
+          <div id="hrNotifList" class="flex flex-wrap gap-2"></div>
+        </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
           <div class="stat-card glass-card rounded-2xl p-5 border-l-4 border-l-indigo-500">
             <div class="flex items-center justify-between mb-2"><span class="text-xs font-bold text-slate-400 uppercase">Total Staff</span><div class="w-9 h-9 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center"><i class="fas fa-users"></i></div></div>
@@ -631,7 +640,7 @@
             <div class="flex items-baseline gap-2"><p class="text-3xl font-extrabold text-amber-400" id="hrMissToday">0</p><span class="text-xs text-amber-300 font-bold" id="hrMissPct">0%</span></div>
             <p class="text-[11px] text-slate-400 mt-2">Requires HR clearance</p>
           </div>
-          <button type="button" onclick="openLateEmployeesAudit()" class="stat-card glass-card rounded-2xl p-5 border-l-4 border-l-indigo-500 text-left cursor-pointer" aria-label="View late employee attendance audit">
+          <button type="button" onclick="openLateEmployeesAudit()" onmouseenter="showLateEmployeesHover(event)" onmouseleave="hideLateEmployeesHover()" class="stat-card glass-card rounded-2xl p-5 border-l-4 border-l-indigo-500 text-left cursor-pointer" aria-label="View late employee attendance audit">
             <div class="flex items-center justify-between mb-2"><span class="text-xs font-bold text-slate-400 uppercase">Late Employees</span><div class="w-9 h-9 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center"><i class="fas fa-business-time"></i></div></div>
             <p class="text-3xl font-extrabold text-indigo-400" id="hrLateToday">0</p>
             <p class="text-[11px] text-slate-400 mt-2">View real attendance records</p>
@@ -675,15 +684,41 @@
           <div id="resetRequestsList" class="space-y-2.5"></div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div class="glass-card rounded-3xl p-6">
-            <h3 class="font-bold text-sm text-white flex items-center gap-2 mb-4"><i class="fas fa-building text-indigo-400"></i> Department-wise Attendance</h3>
-            <div class="relative h-64"><canvas id="hrDeptChart"></canvas></div>
-            <p id="hrDeptNoData" class="hidden text-center text-xs text-slate-400 py-4"><i class="fas fa-calendar-xmark mr-1"></i>No attendance data for selected period</p>
+        <!-- Executive Overview: Department-wise Attendance (Large/Wide) -->
+        <div class="grid grid-cols-1 gap-6 mb-6">
+          <!-- Chart 1: Department-wise Attendance (Bar) - Full Width -->
+          <div class="glass-card rounded-3xl p-5 sm:p-6">
+            <h3 class="font-bold text-sm sm:text-base text-white flex items-center gap-2 mb-3"><i class="fas fa-building text-indigo-400"></i> Department-wise Attendance</h3>
+            <div class="relative h-56 sm:h-64"><canvas id="hrDeptChart"></canvas></div>
+            <p id="hrDeptNoData" class="hidden text-center text-xs text-slate-400 py-2"><i class="fas fa-calendar-xmark mr-1"></i>No attendance data for selected period</p>
           </div>
-          <div class="glass-card rounded-3xl p-6">
-            <h3 class="font-bold text-sm text-white flex items-center gap-2 mb-4"><i class="fas fa-chart-line text-emerald-400"></i> Organization Trend</h3>
-            <div class="relative h-64"><canvas id="hrTrendChart"></canvas></div>
+        </div>
+
+        <!-- Executive Overview: 4 Charts Row -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <!-- Chart 2: Attendance Activity (Pie) -->
+          <div class="glass-card rounded-3xl p-4 sm:p-5">
+            <h3 class="font-bold text-xs sm:text-sm text-white flex items-center gap-2 mb-3"><i class="fas fa-chart-pie text-indigo-400"></i> Attendance Activity</h3>
+            <div class="relative h-44 sm:h-48"><canvas id="hrActivityChart"></canvas></div>
+            <p id="hrActivityNoData" class="hidden text-center text-xs text-slate-400 py-2">No data for selected period</p>
+          </div>
+          <!-- Chart 3: Last 10 Days Presence (Bar) -->
+          <div class="glass-card rounded-3xl p-4 sm:p-5">
+            <h3 class="font-bold text-xs sm:text-sm text-white flex items-center gap-2 mb-3"><i class="fas fa-chart-column text-emerald-400"></i> Last 10 Days Presence</h3>
+            <div class="relative h-44 sm:h-48"><canvas id="hrLast10DaysChart"></canvas></div>
+            <p id="hrLast10DaysNoData" class="hidden text-center text-xs text-slate-400 py-2">No data for selected period</p>
+          </div>
+          <!-- Chart 4: Employees Currently Present by Company (Horizontal Bar) -->
+          <div class="glass-card rounded-3xl p-4 sm:p-5">
+            <h3 class="font-bold text-xs sm:text-sm text-white flex items-center gap-2 mb-3"><i class="fas fa-users-viewfinder text-amber-400"></i> Currently Present by Company</h3>
+            <div class="relative h-44 sm:h-48"><canvas id="hrCurrentlyPresentChart"></canvas></div>
+            <p id="hrCurrentlyPresentNoData" class="hidden text-center text-xs text-slate-400 py-2">No employees currently present</p>
+          </div>
+          <!-- Chart 5: Yesterday's Present/Absent/On Leave (Bar) -->
+          <div class="glass-card rounded-3xl p-4 sm:p-5">
+            <h3 class="font-bold text-xs sm:text-sm text-white flex items-center gap-2 mb-3"><i class="fas fa-calendar-day text-rose-400"></i> Yesterday's Attendance</h3>
+            <div class="relative h-44 sm:h-48"><canvas id="hrYesterdayChart"></canvas></div>
+            <p id="hrYesterdayNoData" class="hidden text-center text-xs text-slate-400 py-2">No data for yesterday</p>
           </div>
         </div>
 
@@ -717,29 +752,30 @@
             <div class="flex flex-wrap items-center gap-3">
               <div class="relative">
                 <i class="fas fa-search absolute left-3 top-2.5 text-slate-500 text-xs"></i>
-                <input type="text" id="hrAllEmpSearch" oninput="loadHrRoster()" placeholder="Search Name or ID..." class="bg-slate-900/80 border border-white/10 rounded-xl py-2 pl-9 pr-3 text-xs text-white placeholder-slate-500 outline-none focus:border-indigo-500 w-44" />
+                <input type="text" id="hrAllEmpSearch" oninput="debouncedLoadHrRoster()" placeholder="Search Name or ID..." class="bg-slate-900/80 border border-white/10 rounded-xl py-2 pl-9 pr-3 text-xs text-white placeholder-slate-500 outline-none focus:border-indigo-500 w-44" />
               </div>
-              <select id="hrAllEmpDeptFilter" onchange="loadHrRoster()" class="bg-slate-900/80 border border-white/10 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-indigo-500">
+              <select id="hrAllEmpDeptFilter" onchange="hrRosterPage=1;loadHrRoster()" class="bg-slate-900/80 border border-white/10 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-indigo-500">
                 <option value="All">All Departments</option>
               </select>
-              <select id="hrAllEmpCompanyFilter" onchange="loadHrRoster()" class="bg-slate-900/80 border border-white/10 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-indigo-500">
+              <select id="hrAllEmpCompanyFilter" onchange="hrRosterPage=1;loadHrRoster()" class="bg-slate-900/80 border border-white/10 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-indigo-500">
                 <option value="">All Companies</option>
               </select>
-              <select id="hrAllEmpGenderFilter" onchange="loadHrRoster()" class="bg-slate-900/80 border border-white/10 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-indigo-500">
+              <select id="hrAllEmpGenderFilter" onchange="hrRosterPage=1;loadHrRoster()" class="bg-slate-900/80 border border-white/10 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-indigo-500">
                 <option value="">All Genders</option>
               </select>
-              <select id="hrAllEmpCategoryFilter" onchange="loadHrRoster()" class="bg-slate-900/80 border border-white/10 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-indigo-500">
+              <select id="hrAllEmpCategoryFilter" onchange="hrRosterPage=1;loadHrRoster()" class="bg-slate-900/80 border border-white/10 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-indigo-500">
                 <option value="">All Categories</option>
               </select>
-              <select id="hrAllEmpDesignationFilter" onchange="loadHrRoster()" class="bg-slate-900/80 border border-white/10 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-indigo-500">
+              <select id="hrAllEmpDesignationFilter" onchange="hrRosterPage=1;loadHrRoster()" class="bg-slate-900/80 border border-white/10 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-indigo-500">
                 <option value="">All Designations</option>
               </select>
-              <select id="hrAllEmpMaritalFilter" onchange="loadHrRoster()" class="bg-slate-900/80 border border-white/10 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-indigo-500">
+              <select id="hrAllEmpMaritalFilter" onchange="hrRosterPage=1;loadHrRoster()" class="bg-slate-900/80 border border-white/10 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-indigo-500">
                 <option value="">All Marital Statuses</option>
               </select>
-              <select id="hrAllEmpStatusFilter" onchange="loadHrRoster()" class="bg-slate-900/80 border border-white/10 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-indigo-500">
+              <select id="hrAllEmpStatusFilter" onchange="hrRosterPage=1;loadHrRoster()" class="bg-slate-900/80 border border-white/10 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-indigo-500">
                 <option value="">All Employee Statuses</option>
               </select>
+              <button onclick="clearHrRosterFilters()" class="px-3.5 py-2 rounded-xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-300 hover:bg-indigo-600/30 text-[11px] font-bold transition"><i class="fas fa-filter-circle-xmark mr-1"></i>Clear Filters</button>
               <button onclick="exportCSV('roster')" class="px-3.5 py-2 rounded-xl bg-emerald-600/20 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-600/30 text-[11px] font-bold transition"><i class="fas fa-file-csv mr-1"></i>Export</button>
             </div>
           </div>
@@ -877,14 +913,63 @@
           <div class="flex flex-wrap items-center justify-between gap-4 mb-6 pb-4 border-b border-white/10">
             <div>
               <h3 class="font-bold text-base text-white flex items-center gap-2"><i class="fas fa-calendar-day text-rose-400"></i> Daily Master Report</h3>
-              <p class="text-xs text-slate-400">Punching logs of all employees for any date</p>
+              <p class="text-xs text-slate-400">Punching logs of all employees for any date or date range</p>
             </div>
             <div class="flex items-center gap-3">
-              <input type="date" id="hrDailyDatePicker" onchange="renderHRDaily()" class="bg-slate-900/80 border border-white/10 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-indigo-500" />
-              <button onclick="renderHRDaily()" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition">Fetch DB</button>
               <button onclick="exportCSV('daily-master')" class="px-4 py-2 rounded-xl bg-emerald-600/20 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-600/30 text-xs font-bold transition"><i class="fas fa-file-csv mr-1"></i>Export</button>
             </div>
           </div>
+          
+          <!-- Filters Row -->
+          <div class="flex flex-wrap items-end gap-4 mb-4 p-4 rounded-2xl bg-slate-900/50 border border-white/5">
+            <div class="flex flex-col gap-1 min-w-[160px]">
+              <label class="text-[10px] uppercase font-bold text-slate-400">From Date</label>
+              <input type="date" id="hrDailyFromDate" class="bg-slate-800 border border-white/10 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-indigo-500" />
+            </div>
+            <div class="flex flex-col gap-1 min-w-[160px]">
+              <label class="text-[10px] uppercase font-bold text-slate-400">To Date</label>
+              <input type="date" id="hrDailyToDate" class="bg-slate-800 border border-white/10 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-indigo-500" />
+            </div>
+            <div class="flex flex-col gap-1 min-w-[160px]">
+              <label class="text-[10px] uppercase font-bold text-slate-400">Department</label>
+              <select id="hrDailyDeptFilter" class="bg-slate-800 border border-white/10 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-indigo-500">
+                <option value="All">All Departments</option>
+              </select>
+            </div>
+            <div class="flex flex-col gap-1 min-w-[160px]">
+              <label class="text-[10px] uppercase font-bold text-slate-400">Company</label>
+              <select id="hrDailyCompanyFilter" class="bg-slate-800 border border-white/10 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-indigo-500">
+                <option value="All">All Companies</option>
+              </select>
+            </div>
+            <div class="flex flex-col gap-1">
+              <button onclick="renderHRDaily()" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition h-10">Fetch DB</button>
+            </div>
+            <div class="flex flex-col gap-1">
+              <button onclick="clearHRDailyFilters()" class="px-4 py-2 rounded-xl bg-rose-600/20 border border-rose-500/30 text-rose-300 hover:bg-rose-600/30 text-xs font-bold transition h-10"><i class="fas fa-filter-circle-xmark mr-1"></i>Clear Filters</button>
+            </div>
+          </div>
+          
+          <!-- Pagination Controls -->
+          <div id="hrDailyPagination" class="flex flex-wrap items-center justify-between gap-3 mt-4 p-3 rounded-xl bg-slate-900/50 border border-white/5 hidden">
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-slate-400">Show</span>
+              <select id="hrDailyPageSize" onchange="hrDailyPage=1; hrDailyPageSize=parseInt(this.value); renderHRDaily()" class="bg-slate-800 border border-white/10 rounded-xl px-2 py-1 text-xs text-white outline-none focus:border-indigo-500">
+                <option value="25">25</option>
+                <option value="50" selected>50</option>
+                <option value="100">100</option>
+              </select>
+              <span class="text-xs text-slate-400">per page</span>
+            </div>
+            <div class="flex items-center gap-2" id="hrDailyPageInfo">
+              <span class="text-xs text-slate-400">Page 1 of 1 (0 employees)</span>
+            </div>
+            <div class="flex items-center gap-1">
+              <button onclick="changeHrDailyPage(-1)" id="hrDailyPrevBtn" disabled class="px-3 py-1.5 rounded-lg bg-slate-800 border border-white/10 text-white text-xs font-bold transition disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-700"><i class="fas fa-chevron-left"></i></button>
+              <button onclick="changeHrDailyPage(1)" id="hrDailyNextBtn" disabled class="px-3 py-1.5 rounded-lg bg-slate-800 border border-white/10 text-white text-xs font-bold transition disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-700"><i class="fas fa-chevron-right"></i></button>
+            </div>
+          </div>
+          
           <div class="overflow-x-auto">
             <table class="w-full text-left text-xs">
               <thead><tr class="border-b border-white/10 text-slate-400 font-semibold uppercase">
@@ -972,6 +1057,193 @@
               </tr></thead>
               <tbody id="hrMarriageTable" class="divide-y divide-white/5"></tbody>
             </table>
+          </div>
+        </div>
+      </main>
+
+      <!-- ===== HR EMAIL CONFIGURATION ===== -->
+      <main id="hrEmail" class="p-4 md:p-6 flex-1 hidden fade-in space-y-6">
+        <div class="glass-card rounded-3xl p-6">
+          <div class="flex flex-wrap items-center justify-between gap-4 mb-5 pb-4 border-b border-white/10">
+            <div>
+              <h2 class="text-base font-bold text-white flex items-center gap-2"><i class="fas fa-envelope text-violet-400"></i> Email Control Center</h2>
+              <p class="text-xs text-slate-400 mt-0.5">Brevo-powered employee greetings &amp; custom emails — HR Admin only, secrets stay server-side</p>
+            </div>
+            <button onclick="loadEmailSection()" class="px-3.5 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-xs font-bold text-slate-200 transition"><i class="fas fa-rotate mr-1.5"></i>Refresh</button>
+          </div>
+          <div id="emailStatusRow" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5"></div>
+          <!-- Actionable guidance: exactly what is missing + the tab/button to fix it.
+               Populated from GET /api/email/health (server-side truth, not guesses). -->
+          <div id="emHealthPanel" class="mb-5"></div>
+          <div class="flex flex-wrap gap-2">
+            <button onclick="showEmailTab('provider')" id="emTabBtn-provider" class="tabbtn active px-3.5 py-2 rounded-xl text-[11px] font-bold text-slate-400"><i class="fas fa-sliders mr-1.5 text-violet-400"></i>Provider Config</button>
+            <button onclick="showEmailTab('source')" id="emTabBtn-source" class="tabbtn px-3.5 py-2 rounded-xl text-[11px] font-bold text-slate-400"><i class="fas fa-file-excel mr-1.5 text-teal-400"></i>Email Source / Import</button>
+            <button onclick="showEmailTab('single')" id="emTabBtn-single" class="tabbtn px-3.5 py-2 rounded-xl text-[11px] font-bold text-slate-400"><i class="fas fa-user mr-1.5 text-amber-400"></i>Single Email</button>
+            <button onclick="showEmailTab('bulk')" id="emTabBtn-bulk" class="tabbtn px-3.5 py-2 rounded-xl text-[11px] font-bold text-slate-400"><i class="fas fa-users mr-1.5 text-sky-400"></i>Bulk Email</button>
+            <button onclick="showEmailTab('templates')" id="emTabBtn-templates" class="tabbtn px-3.5 py-2 rounded-xl text-[11px] font-bold text-slate-400"><i class="fas fa-envelope-open-text mr-1.5 text-violet-400"></i>Templates</button>
+            <button onclick="showEmailTab('logs')" id="emTabBtn-logs" class="tabbtn px-3.5 py-2 rounded-xl text-[11px] font-bold text-slate-400"><i class="fas fa-clock-rotate-left mr-1.5 text-slate-300"></i>Logs</button>
+          </div>
+          <!-- TAB: PROVIDER CONFIGURATION -->
+          <div id="emTab-provider" class="email-tab mt-5 grid grid-cols-1 lg:grid-cols-2 gap-5">
+            <div class="p-4 rounded-2xl bg-white/5 border border-white/5">
+              <p class="text-xs font-bold text-white mb-3"><i class="fas fa-sliders text-violet-400 mr-1.5"></i>Provider &amp; Sender</p>
+              <div class="space-y-2.5">
+                <div><label class="text-[10px] uppercase font-bold text-slate-400">Email Provider</label>
+                  <select id="emProviderType" onchange="emailProviderTypeChanged()" class="w-full mt-1 px-3 py-2 rounded-xl bg-slate-900/60 border border-white/10 text-xs text-white">
+                    <option value="brevo">Brevo — HTTPS API (api.brevo.com)</option>
+                    <option value="smtp">SMTP — custom mail server (Gmail / Outlook 365)</option>
+                  </select></div>
+                <div class="grid grid-cols-2 gap-2.5">
+                  <div><label class="text-[10px] uppercase font-bold text-slate-400">Sender Name</label><input id="emSenderName" class="w-full mt-1 px-3 py-2 rounded-xl bg-slate-900/60 border border-white/10 text-xs text-white" placeholder="HR Team"></div>
+                  <div><label class="text-[10px] uppercase font-bold text-slate-400">Sender Email</label><input id="emSenderEmail" class="w-full mt-1 px-3 py-2 rounded-xl bg-slate-900/60 border border-white/10 text-xs text-white" placeholder="hr@company.com"></div>
+                </div>
+                <div id="emBrevoFields">
+                  <label class="text-[10px] uppercase font-bold text-slate-400">Brevo API Key</label>
+                  <input id="emBrevoKey" type="password" autocomplete="off" class="w-full mt-1 px-3 py-2 rounded-xl bg-slate-900/60 border border-white/10 text-xs text-white" placeholder="xkeysib-...">
+                  <p class="text-[10px] text-slate-400 mt-1 leading-relaxed">Blank chhod do = saved key waise hi rahegi. Key server par encrypted save hoti hai aur browser ko kabhi wapas nahi bheji jaati.</p>
+                </div>
+                <div id="emSmtpFields" class="hidden space-y-2.5">
+                  <div class="grid grid-cols-3 gap-2.5">
+                    <div class="col-span-2"><label class="text-[10px] uppercase font-bold text-slate-400">SMTP Host</label><input id="emSmtpHost" class="w-full mt-1 px-3 py-2 rounded-xl bg-slate-900/60 border border-white/10 text-xs text-white" placeholder="smtp.gmail.com"></div>
+                    <div><label class="text-[10px] uppercase font-bold text-slate-400">Port</label><input id="emSmtpPort" class="w-full mt-1 px-3 py-2 rounded-xl bg-slate-900/60 border border-white/10 text-xs text-white" placeholder="587"></div>
+                  </div>
+                  <div class="grid grid-cols-2 gap-2.5">
+                    <div><label class="text-[10px] uppercase font-bold text-slate-400">SMTP User</label><input id="emSmtpUser" autocomplete="off" class="w-full mt-1 px-3 py-2 rounded-xl bg-slate-900/60 border border-white/10 text-xs text-white" placeholder="hr@company.com"></div>
+                    <div><label class="text-[10px] uppercase font-bold text-slate-400">SMTP Password</label><input id="emSmtpPassword" type="password" autocomplete="off" class="w-full mt-1 px-3 py-2 rounded-xl bg-slate-900/60 border border-white/10 text-xs text-white" placeholder="app password"></div>
+                  </div>
+                  <label class="flex items-center gap-2 text-[10px] text-slate-300 font-semibold"><input id="emSmtpSecure" type="checkbox" class="accent-violet-500">Use SSL/TLS (port 465 — warna 587 STARTTLS)</label>
+                </div>
+                <div id="emApiKeyStatus" class="rounded-xl bg-slate-900/40 border border-white/5 px-3 py-2 text-[10px] text-slate-400 leading-relaxed"></div>
+                <button onclick="saveEmailProvider()" id="emSaveBtn" class="w-full py-2.5 rounded-xl bg-violet-500/15 border border-violet-500/30 text-violet-300 hover:bg-violet-500/25 text-xs font-bold transition">Save Provider &amp; Sender</button>
+              </div>
+            </div>
+            <div class="p-4 rounded-2xl bg-white/5 border border-white/5">
+              <p class="text-xs font-bold text-white mb-3"><i class="fas fa-paper-plane text-emerald-400 mr-1.5"></i>Test Email <span class="text-[10px] font-normal text-slate-400">(employee data use nahi hota)</span></p>
+              <div class="flex gap-2">
+                <input id="emTestTo" class="flex-1 px-3 py-2 rounded-xl bg-slate-900/60 border border-white/10 text-xs text-white" placeholder="your@email.com">
+                <button onclick="sendTestEmail()" id="emTestBtn" class="px-4 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/25 text-xs font-bold transition whitespace-nowrap">Send Test</button>
+              </div>
+              <div id="emTestStatus" class="mt-2.5"></div>
+            </div>
+          </div>
+          <!-- TAB: EMPLOYEE EMAIL SOURCE / EXCEL IMPORT -->
+          <div id="emTab-source" class="email-tab hidden mt-5 space-y-5">
+            <div class="p-4 rounded-2xl bg-white/5 border border-white/5">
+              <p class="text-xs font-bold text-white mb-3"><i class="fas fa-database text-amber-400 mr-1.5"></i>Employee Email Source — Resolution Priority</p>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-3" id="emSourceCounts"></div>
+              <div class="flex flex-wrap gap-2 mt-3">
+                <button onclick="exportMissingEmails()" id="emMissingBtn" class="px-4 py-2 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-300 hover:bg-amber-500/25 text-xs font-bold transition"><i class="fas fa-file-csv mr-1.5"></i>Export Missing Emails (CSV)</button>
+                <span class="text-[10px] text-slate-400 self-center">Jin employees ka email nahi mila sirf wahi rows export hongi — Excel me bhar kar import kar do.</span>
+              </div>
+              <p class="text-[10px] text-slate-400 mt-3 leading-relaxed">1️⃣ Savior SQL <strong class="text-white">e_mail1</strong> (dbo.tblemployee — read-only) &nbsp;→&nbsp; 2️⃣ <strong class="text-white">HR_EmployeeEmails</strong> mapping (Excel import fallback). Har email ke saath source dikhta hai. Savior table me koi column add nahi hota.</p>
+            </div>
+            <div class="p-4 rounded-2xl bg-white/5 border border-white/5">
+              <p class="text-xs font-bold text-white mb-3"><i class="fas fa-file-excel text-teal-400 mr-1.5"></i>Employee Email Import (Excel)</p>
+              <p class="text-[10px] text-slate-400 mb-2.5 leading-relaxed">Headers: <strong class="text-white">CompanyCode, Paycode, DepartmentCode, EmployeeName, Email</strong> — matching <strong class="text-white">sirf Paycode</strong> se (EmployeeName sirf display/validation). Same Paycode dobara aaye to mapping <strong class="text-white">update</strong> hoti hai, duplicate nahi banti. Invalid email rows skip.</p>
+              <div class="flex gap-2">
+                <input type="file" id="emExcelFile" accept=".xlsx,.xls,.csv" class="hidden" onchange="handleEmailExcel(event)">
+                <button onclick="document.getElementById('emExcelFile').click()" class="flex-1 py-2.5 rounded-xl bg-teal-500/15 border border-teal-500/30 text-teal-300 hover:bg-teal-500/25 text-xs font-bold transition"><i class="fas fa-upload mr-1.5"></i>Choose Excel</button>
+                <button onclick="downloadEmailTemplate()" class="px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-xs font-bold text-slate-200 transition">Template</button>
+              </div>
+              <div id="emImportSummary" class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3"></div>
+            </div>
+          </div>
+          <!-- TAB: SINGLE EMAIL -->
+          <div id="emTab-single" class="email-tab hidden mt-5 grid grid-cols-1 lg:grid-cols-2 gap-5">
+            <div class="space-y-4">
+              <div class="p-4 rounded-2xl bg-white/5 border border-white/5 relative">
+                <p class="text-xs font-bold text-white mb-3"><i class="fas fa-magnifying-glass text-amber-400 mr-1.5"></i>Find Employee <span class="text-[10px] font-normal text-slate-400">— Paycode ya Name (real SQL search)</span></p>
+                <input id="emSingleSearch" oninput="debouncedSingleSearch()" onkeydown="if(event.key==='Enter')searchSingleEmployees()" class="w-full px-3 py-2 rounded-xl bg-slate-900/60 border border-white/10 text-xs text-white" placeholder="Paycode / Employee Name…">
+                <div id="emSingleResults" class="hidden absolute left-0 right-0 top-full mt-1 z-20 glass rounded-2xl p-1.5 max-h-60 overflow-y-auto border border-white/10"></div>
+              </div>
+              <div id="emSingleCard" class="hidden p-4 rounded-2xl bg-white/5 border border-white/5"></div>
+            </div>
+            <div class="p-4 rounded-2xl bg-white/5 border border-white/5">
+              <p class="text-xs font-bold text-white mb-3"><i class="fas fa-user-pen text-amber-400 mr-1.5"></i>Compose &amp; Send</p>
+              <div class="space-y-2.5">
+                <input type="hidden" id="emSinglePaycode" value="">
+                <div><label class="text-[10px] uppercase font-bold text-slate-400">Mail Type</label><select id="emSingleType" onchange="singleTypeChanged()" class="w-full mt-1 px-3 py-2 rounded-xl bg-slate-900/60 border border-white/10 text-xs text-white"><option>Birthday</option><option>Work Anniversary</option><option>Marriage Anniversary</option><option value="Custom">Custom Email</option></select></div>
+                <div><label class="text-[10px] uppercase font-bold text-slate-400">Subject (editable)</label><input id="emSingleSubject" class="w-full mt-1 px-3 py-2 rounded-xl bg-slate-900/60 border border-white/10 text-xs text-white"></div>
+                <div><label class="text-[10px] uppercase font-bold text-slate-400">Message Body (editable)</label><textarea id="emSingleBody" rows="6" class="w-full mt-1 px-3 py-2 rounded-xl bg-slate-900/60 border border-white/10 text-xs text-white"></textarea></div>
+                <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="emSingleResend" class="accent-amber-500"><span class="text-[10px] font-bold text-amber-300">Resend (ignore duplicate protection)</span></label>
+                <button onclick="sendSingleEmail()" id="emSingleSendBtn" class="w-full py-2.5 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-300 hover:bg-amber-500/25 text-xs font-bold transition">Send Email</button>
+                <div id="emSingleStatus"></div>
+              </div>
+            </div>
+          </div>
+          <!-- TAB: BULK EMAIL -->
+          <div id="emTab-bulk" class="email-tab hidden mt-5 space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-2.5">
+              <div><label class="text-[10px] uppercase font-bold text-slate-400">Mail Type</label><select id="emBulkType" onchange="bulkTypeChanged()" class="w-full mt-1 px-2.5 py-2 rounded-xl bg-slate-900/60 border border-white/10 text-xs text-white"><option>Birthday</option><option>Work Anniversary</option><option>Marriage Anniversary</option><option value="Custom">Custom Email</option></select></div>
+              <div><label class="text-[10px] uppercase font-bold text-slate-400">Company Code</label><select id="emFilterCompany" onchange="populateEmailDeptFilter()" class="w-full mt-1 px-2.5 py-2 rounded-xl bg-slate-900/60 border border-white/10 text-xs text-white"><option value="ALL">All Companies</option></select></div>
+              <div><label class="text-[10px] uppercase font-bold text-slate-400">Department</label><select id="emFilterDept" class="w-full mt-1 px-2.5 py-2 rounded-xl bg-slate-900/60 border border-white/10 text-xs text-white"><option value="">All Departments</option></select></div>
+              <div><label class="text-[10px] uppercase font-bold text-slate-400">Date <span class="normal-case font-normal">(day+month match; n/a for Custom)</span></label><input type="date" id="emBulkDate" class="w-full mt-1 px-2.5 py-2 rounded-xl bg-slate-900/60 border border-white/10 text-xs text-white"></div>
+            </div>
+            <div class="space-y-2.5">
+              <div><label class="text-[10px] uppercase font-bold text-slate-400">Subject <span class="normal-case font-normal">(pre-filled from template — editable)</span></label><input id="emBulkSubject" class="w-full mt-1 px-3 py-2 rounded-xl bg-slate-900/60 border border-white/10 text-xs text-white"></div>
+              <div><label class="text-[10px] uppercase font-bold text-slate-400">Message Body <span class="normal-case font-normal">— placeholders: {{EmployeeName}} {{Paycode}} {{Department}} {{CompanyCode}} {{Designation}}</span></label><textarea id="emBulkBody" rows="5" class="w-full mt-1 px-3 py-2 rounded-xl bg-slate-900/60 border border-white/10 text-xs text-white"></textarea></div>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button onclick="previewBulkRecipients()" id="emPreviewBtn" class="flex-1 py-2.5 rounded-xl bg-sky-500/15 border border-sky-500/30 text-sky-300 hover:bg-sky-500/25 text-xs font-bold transition"><i class="fas fa-eye mr-1.5"></i>Preview Recipients</button>
+              <button onclick="sendBulkEmail()" id="emSendBtn" disabled class="flex-1 py-2.5 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-300 hover:bg-amber-500/25 text-xs font-bold transition disabled:opacity-40 disabled:cursor-not-allowed"><i class="fas fa-paper-plane mr-1.5"></i>Send Bulk Email</button>
+            </div>
+            <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="emBulkResend" class="accent-amber-500"><span class="text-[10px] font-bold text-amber-300">Resend (already-sent employees ko bhi dubara bhejo)</span></label>
+            <div id="emBulkSummary" class="text-[11px] text-slate-300"></div>
+            <div id="emBulkPreviewWrap" class="hidden overflow-x-auto rounded-2xl border border-white/5">
+              <table class="w-full text-xs">
+                <thead><tr class="text-[10px] uppercase text-slate-400 border-b border-white/10 text-left bg-white/5">
+                  <th class="py-2 px-3">Employee Name</th><th class="py-2 px-3">Paycode</th><th class="py-2 px-3">Company Code</th><th class="py-2 px-3">Department</th><th class="py-2 px-3">Email</th><th class="py-2 px-3">Mail Type</th><th class="py-2 px-3">Email Source</th><th class="py-2 px-3">Already Sent</th>
+                </tr></thead>
+                <tbody id="emBulkPreviewBody" class="divide-y divide-white/5"></tbody>
+              </table>
+            </div>
+            <p class="text-[10px] text-slate-500"><i class="fas fa-circle-info mr-1"></i>Preview me koi email send NAHI hota. Send sirf "Send Bulk Email" ke explicit confirm par hota hai.</p>
+          </div>
+          <!-- TAB: TEMPLATES -->
+          <div id="emTab-templates" class="email-tab hidden mt-5 space-y-4">
+            <p class="text-[10px] text-slate-400">Placeholders: <strong class="text-white">{{EmployeeName}} {{Paycode}} {{Department}} {{CompanyCode}} {{Designation}}</strong> — har send par real employee data se replace hote hain.</p>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              <div class="p-4 rounded-2xl bg-white/5 border border-white/5 space-y-2">
+                <p class="text-xs font-bold text-emerald-300"><i class="fas fa-cake-candles mr-1.5"></i>Birthday Template</p>
+                <input id="emBdaySubject" class="w-full px-3 py-2 rounded-xl bg-slate-900/60 border border-white/10 text-xs text-white" placeholder="Subject">
+                <textarea id="emBdayBody" rows="5" class="w-full px-3 py-2 rounded-xl bg-slate-900/60 border border-white/10 text-xs text-white" placeholder="Body"></textarea>
+                <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="emBdayEnabled" class="accent-emerald-500"><span class="text-[10px] font-bold text-emerald-300">Auto-send ON (daily scheduler)</span></label>
+              </div>
+              <div class="p-4 rounded-2xl bg-white/5 border border-white/5 space-y-2">
+                <p class="text-xs font-bold text-sky-300"><i class="fas fa-briefcase mr-1.5"></i>Work Anniversary Template</p>
+                <input id="emWasSubject" class="w-full px-3 py-2 rounded-xl bg-slate-900/60 border border-white/10 text-xs text-white" placeholder="Subject">
+                <textarea id="emWasBody" rows="5" class="w-full px-3 py-2 rounded-xl bg-slate-900/60 border border-white/10 text-xs text-white" placeholder="Body"></textarea>
+                <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="emWasEnabled" class="accent-sky-500"><span class="text-[10px] font-bold text-sky-300">Auto-send ON (daily scheduler)</span></label>
+              </div>
+              <div class="p-4 rounded-2xl bg-white/5 border border-white/5 space-y-2">
+                <p class="text-xs font-bold text-pink-300"><i class="fas fa-heart mr-1.5"></i>Marriage Anniversary Template</p>
+                <input id="emMarSubject" class="w-full px-3 py-2 rounded-xl bg-slate-900/60 border border-white/10 text-xs text-white" placeholder="Subject">
+                <textarea id="emMarBody" rows="5" class="w-full px-3 py-2 rounded-xl bg-slate-900/60 border border-white/10 text-xs text-white" placeholder="Body"></textarea>
+                <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="emMarEnabled" class="accent-pink-500"><span class="text-[10px] font-bold text-pink-300">Auto-send ON (daily scheduler)</span></label>
+              </div>
+              <div class="p-4 rounded-2xl bg-white/5 border border-white/5 space-y-2">
+                <p class="text-xs font-bold text-violet-300"><i class="fas fa-envelope-open-text mr-1.5"></i>Custom Message Template</p>
+                <input id="emCustomSubject" class="w-full px-3 py-2 rounded-xl bg-slate-900/60 border border-white/10 text-xs text-white" placeholder="Subject">
+                <textarea id="emCustomBody" rows="5" class="w-full px-3 py-2 rounded-xl bg-slate-900/60 border border-white/10 text-xs text-white" placeholder="Body"></textarea>
+                <p class="text-[10px] text-slate-500">Custom emails sirf manual (Single / Bulk tab) se jaate hain — scheduler me nahi.</p>
+              </div>
+            </div>
+            <button onclick="saveEmailConfig()" id="emTplSaveBtn" class="w-full py-2.5 rounded-xl bg-violet-500/15 border border-violet-500/30 text-violet-300 hover:bg-violet-500/25 text-xs font-bold transition">Save All Templates</button>
+          </div>
+          <!-- TAB: EMAIL LOGS -->
+          <div id="emTab-logs" class="email-tab hidden mt-5">
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+              <p class="text-xs font-bold text-white"><i class="fas fa-clock-rotate-left text-slate-300 mr-1.5"></i>Email Log <span id="emLogCount" class="chip"></span> <span class="text-[10px] font-normal text-slate-400">— har attempt record hota hai (duplicate protection isi table se chalti hai)</span></p>
+              <button onclick="loadEmailLog()" class="px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-[11px] font-bold text-slate-200 transition">Refresh Log</button>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-xs">
+                <thead><tr class="text-[10px] uppercase text-slate-400 border-b border-white/10 text-left">
+                  <th class="py-2 px-3">Date</th><th class="py-2 px-3">Employee</th><th class="py-2 px-3">Paycode</th><th class="py-2 px-3">Company</th><th class="py-2 px-3">Department</th><th class="py-2 px-3">Event</th><th class="py-2 px-3">Email</th><th class="py-2 px-3">Status</th><th class="py-2 px-3">Sent Time</th><th class="py-2 px-3">Error</th>
+                </tr></thead>
+                <tbody id="emLogBody" class="divide-y divide-white/5"></tbody>
+              </table>
+            </div>
           </div>
         </div>
       </main>
@@ -1483,7 +1755,7 @@ function attendanceLabel(code){
   if (c === 'POW' || c === 'PRESENT ON WEEK OFF') return 'Present (Week Off)';
   return code ? String(code).trim() : null;
 }
-function isLateRow(r){ return r ? (attendanceCode(r.statusCode || r.status) === 'LATE' || Number(r.latearrival || 0) > 0) : false; }
+function isLateRow(r){ return r ? (r.isLate === true || attendanceCode(r.statusCode || r.status) === 'LATE' || Number(r.latearrival || 0) > 0) : false; }
 function hasPunchRow(r){ return Boolean(r && (r.in1 || r.in2 || r.out1 || r.out2 || r.intime || r.outtime)); }
 function classifyFrontRow(r){
   if (!r) return 'Absent';
@@ -1493,15 +1765,32 @@ function classifyFrontRow(r){
   if (code === 'SRT' || code === 'SHORT') return 'Present';
   if (code === 'POW' || code === 'PRESENT ON WEEK OFF') return 'Present';
   if (code === 'P' || code === 'PRESENT' || code === 'LATE') return 'Present';
-  if (code === 'A' || code === 'ABS' || code === 'ABSENT') return (r.in1 || r.in2 || r.intime) ? 'Miss Punch' : 'Absent';
-  if (code === 'MIS' || code === 'MISS' || code === 'MISS PUNCH' || code === 'MISPUNCH') return 'Miss Punch';
+  if (code === 'A' || code === 'ABS' || code === 'ABSENT') {
+    if (isOngoingPunchRow(r)) return 'Present'; // aaj ki chalti hui shift — OUT abhi pending hai
+    return (r.in1 || r.in2 || r.intime) ? 'Miss Punch' : 'Absent';
+  }
+  if (code === 'MIS' || code === 'MISS' || code === 'MISS PUNCH' || code === 'MISPUNCH') return isOngoingPunchRow(r) ? 'Present' : 'Miss Punch';
   if (code === 'H' || code === 'HOLIDAY') return 'Week Off';
   if (code === 'NO RECORD' || code === 'NO ATTENDANCE RECORDS FOUND') return 'Absent';
   const hasIn = Boolean(r.in1 || r.in2 || r.intime);
   const hasOut = Boolean(r.out1 || r.out2 || r.outtime);
-  if (hasIn) return hasOut ? 'Present' : 'Miss Punch';
+  if (hasIn) return (hasOut || isOngoingPunchRow(r)) ? 'Present' : 'Miss Punch';
   if (hasOut) return 'Miss Punch';
   return 'Absent';
+}
+/* Miss Punch timing rule (frontend mirror): aaj ki chalti hui shift (IN hui, OUT
+   pending) ko Miss Punch nahi ginā jātā. Client ke paas tblshiftmaster ka end-time
+   data nahi hota, isliye yahan date-granularity rule hai (aaj = din in-progress);
+   time-precise decision server par tblshiftmaster se hota hai aur backend refresh
+   (hr/summary + hr/category-analytics) se wahi authoritative value aati hai — core
+   rule dono jagah same hai, granulari bas lookup-data ka farq hai. */
+function isOngoingPunchRow(r){
+  if (!r) return false;
+  const d = r.punchdate || punchDateOnly(r.dateoffice != null ? r.dateoffice : r.punchdate);
+  if (!d || d !== todayISO()) return false;
+  const hasIn = Boolean(r.in1 || r.in2 || r.intime);
+  const hasOut = Boolean(r.out1 || r.out2 || r.outtime);
+  return hasIn && !hasOut;
 }
 
 function normalizeAttendance(row){
@@ -1509,6 +1798,9 @@ function normalizeAttendance(row){
   const computed = classifyFrontRow({ ...row, statusCode: code || null });
   const inRaw = row.in1 || row.in2 || row.intime || null;
   const outRaw = row.out1 || row.out2 || row.outtime || null;
+  // Use backend-computed late status and latearrival when available (grace-aware)
+  const backendLateArrival = Number(row.latearrival || 0);
+  const backendIsLate = row.isLate === true || attendanceCode(row.statusCode || row.status) === 'LATE' || backendLateArrival > 0;
   return {
     ...row,
     statusCode: code || null,
@@ -1520,8 +1812,9 @@ function normalizeAttendance(row){
     outtime: row.outTime || punchTimeOnly(outRaw),
     hrs: Number(row.hoursworked || 0),
     ot: Number(row.otduration || 0),
-    latearrival: Number(row.latearrival || 0),
-    isLate: attendanceCode(row.statusCode || row.status) === 'LATE' || Number(row.latearrival || 0) > 0,
+    latearrival: backendLateArrival,
+    isLate: backendIsLate,
+    graceUsed: row.graceUsed || null,
     remarks: row.reason || '',
   };
 }
@@ -1543,26 +1836,27 @@ async function loadAuthenticatedData(role){
       allEmployees = employees;
     }
     else {
-      // Full directory (all pages) for overview/charts/today views — read-only roster paging.
-      // Single page of 100: payload light rakho; overview/today sirf isi directory par
-      // calculate hota hai (result same, load fast).
-      allEmployees = [];
-      const roster = await apiFetch('/employees?page=1&pageSize=100');
+      // Load ONLY first page initially for roster (paginated display).
+      // Full directory loads lazily when Single Audit tab opens.
+      const roster = await apiFetch('/employees?page=1&pageSize=50');
       if (roster.ok) {
         const data = await roster.json();
-        allEmployees = Array.isArray(data.rows) ? data.rows : [];
+        employees = Array.isArray(data.rows) ? data.rows : [];
       }
-      employees = allEmployees.slice();
+      allEmployees = []; // Will be populated on-demand
     }
     // Seed master code -> name maps from real /employees rows (dept & company names).
-    (allEmployees.length ? allEmployees : employees).forEach(e => {
+    (employees.length ? employees : []).forEach(e => {
       const dc = String(e.departmentcode || '').trim();
       if (dc && !masterNames.dept[dc]) masterNames.dept[dc] = String(e.departmentname || '').trim() || dc;
       const cc = String(e.companycode || '').trim();
       if (cc && !masterNames.company[cc]) masterNames.company[cc] = String(e.companyname || '').trim() || cc;
     });
-    DB.tblemployee = allEmployees.length ? allEmployees : employees;
-    const ar = await apiFetch('/attendance?days=190');
+    DB.tblemployee = employees;
+    // Load ONLY today's attendance on initial load for maximum performance.
+    // Executive Overview / HR Today view needs today's data only.
+    // Full history loads on-demand when user opens Employee Dashboard or Single Employee Audit.
+    const ar = await apiFetch('/attendance?days=1');
     if (ar.ok) {
       const attendance = await ar.json();
       DB.tbltimeregister = Array.isArray(attendance) ? attendance.map(normalizeAttendance) : [];
@@ -1654,6 +1948,43 @@ function todayRow(paycode){
 function directoryEmployees(){ return allEmployees.length ? allEmployees : (eventEmployees.length ? eventEmployees : employees); }
 function overviewEmployees(){ return directoryEmployees(); }
 function departments(){ return Array.from(new Set(directoryEmployees().map(e => e.departmentcode).filter(Boolean))).sort(); }
+
+// Lazy load full employee directory (all pages) when needed — e.g., Single Audit dropdown.
+let allEmployeesLoading = false;
+async function ensureAllEmployeesLoaded(){
+  if (allEmployees.length > 0) return;
+  if (allEmployeesLoading) { while (allEmployeesLoading) await new Promise(r => setTimeout(r, 50)); return; }
+  allEmployeesLoading = true;
+  try {
+    let page = 1;
+    const pageSize = 100;
+    allEmployees = [];
+    while (true) {
+      const roster = await apiFetch('/employees?page=' + page + '&pageSize=' + pageSize + '&active=Y');
+      if (!roster.ok) break;
+      const data = await roster.json();
+      const rows = Array.isArray(data.rows) ? data.rows : [];
+      allEmployees.push(...rows);
+      if (rows.length < pageSize || allEmployees.length >= (data.total || 0)) break;
+      page++;
+    }
+    // Refresh master name maps with full data
+    allEmployees.forEach(e => {
+      const dc = String(e.departmentcode || '').trim();
+      if (dc && !masterNames.dept[dc]) masterNames.dept[dc] = String(e.departmentname || '').trim() || dc;
+      const cc = String(e.companycode || '').trim();
+      if (cc && !masterNames.company[cc]) masterNames.company[cc] = String(e.companyname || '').trim() || cc;
+    });
+    DB.tblemployee = allEmployees.length ? allEmployees : employees;
+    // Update hrEmpSelect dropdown if it exists (Single Audit tab)
+    const sel = document.getElementById('hrEmpSelect');
+    if (sel) {
+      sel.innerHTML = allEmployees.map(e => `<option value="${esc(e.paycode)}">${esc(e.paycode)} - ${esc(e.empname)}</option>`).join('');
+    }
+  } finally {
+    allEmployeesLoading = false;
+  }
+}
 
 // Master code -> friendly name maps (filled from /hr/filters + real /employees rows).
 let masterNames = { dept:{}, company:{}, cat:{}, lists:{} };
@@ -1845,16 +2176,47 @@ function showEmpSection(sec){
   if (sec === 'profile') renderEmpProfile();
 }
 
-function renderEmpOverview(){
+async function renderEmpOverview(){
   const e = loggedInEmployee;
-  const now = new Date();
-  const st = monthStats(e.paycode, now.getFullYear(), now.getMonth());
-  document.getElementById('empCardPresent').textContent = st.present;
-  document.getElementById('empCardPresentSub').textContent = '/ ' + st.total + ' Days';
-  document.getElementById('empCardAbsent').textContent = st.absent;
-  document.getElementById('empCardMiss').textContent = st.miss;
-  document.getElementById('empCardLate').textContent = st.late;
-  document.getElementById('empCardHours').textContent = st.hrs;
+  if (!e) return;
+  
+  // Try to fetch grace-aware stats from backend
+  if (liveMode === 'live') {
+    try {
+      const response = await apiFetch('/employee/dashboard?days=31');
+      if (response.ok) {
+        const data = await response.json();
+        document.getElementById('empCardPresent').textContent = data.present;
+        document.getElementById('empCardPresentSub').textContent = '/ ' + (data.present + data.absent + data.miss) + ' Days';
+        document.getElementById('empCardAbsent').textContent = data.absent;
+        document.getElementById('empCardMiss').textContent = data.miss;
+        document.getElementById('empCardLate').textContent = data.late; // FINAL late after grace consumption
+        document.getElementById('empCardHours').textContent = data.hours.toFixed(1);
+      } else {
+        throw new Error('API failed');
+      }
+    } catch (err) {
+      // Fallback to local calculation
+      const now = new Date();
+      const st = monthStats(e.paycode, now.getFullYear(), now.getMonth());
+      document.getElementById('empCardPresent').textContent = st.present;
+      document.getElementById('empCardPresentSub').textContent = '/ ' + st.total + ' Days';
+      document.getElementById('empCardAbsent').textContent = st.absent;
+      document.getElementById('empCardMiss').textContent = st.miss;
+      document.getElementById('empCardLate').textContent = st.late;
+      document.getElementById('empCardHours').textContent = st.hrs;
+    }
+  } else {
+    // Offline mode - use local calculation
+    const now = new Date();
+    const st = monthStats(e.paycode, now.getFullYear(), now.getMonth());
+    document.getElementById('empCardPresent').textContent = st.present;
+    document.getElementById('empCardPresentSub').textContent = '/ ' + st.total + ' Days';
+    document.getElementById('empCardAbsent').textContent = st.absent;
+    document.getElementById('empCardMiss').textContent = st.miss;
+    document.getElementById('empCardLate').textContent = st.late;
+    document.getElementById('empCardHours').textContent = st.hrs;
+  }
 
   // recent punches (from register)
   const tb = document.getElementById('empRecentPunches'); tb.innerHTML = '';
@@ -1975,28 +2337,60 @@ function renderEmpWeekly(){
   const cur = startOfWeek(new Date());
   const start = new Date(cur); start.setDate(start.getDate() - (4 - wk) * 7);
   const end = new Date(start); end.setDate(end.getDate() + 6);
-  const rows = attBetween(loggedInEmployee.paycode, iso(start), iso(end));
+  const fromISO = iso(start), toISO = iso(end);
   let present = 0, absent = 0, miss = 0, hrs = 0;
-  rows.forEach(r => {
-    if (r.status === 'Week Off') return;
-    if (r.status === 'Absent') absent++;
-    else if (r.status === 'Miss Punch') miss++;
-    else present++;
-    hrs += r.hrs || 0;
-    const d = parseISO(r.punchdate);
-    tb.innerHTML += `<tr class="table-row transition">
-      <td class="py-2.5 px-3 mono text-slate-300">${pad(d.getDate())}-${MONTHS[d.getMonth()]}</td>
-      <td class="py-2.5 px-3 text-slate-400">${DAYS[d.getDay()]}</td>
-      <td class="py-2.5 px-3 text-emerald-300 mono">${r.intime || '--'}</td>
-      <td class="py-2.5 px-3 text-rose-300 mono">${r.outtime || '--'}</td>
-      <td class="py-2.5 px-3 text-white font-semibold">${r.hrs || '--'}</td>
-      <td class="py-2.5 px-3">${statusBadge(r.status)}</td></tr>`;
-  });
-  if (!rows.length) tb.innerHTML = '<tr><td colspan="6" class="py-6 text-center text-slate-500">No records for this week.</td></tr>';
-  document.getElementById('empWeekPresentCount').textContent = present;
-  document.getElementById('empWeekAbsentCount').textContent  = absent;
-  document.getElementById('empWeekMissCount').textContent    = miss;
-  document.getElementById('empWeekHoursCount').textContent   = hrs.toFixed(1);
+  if (liveMode === 'live') {
+    apiFetch('/employee/weekly?fromDate=' + encodeURIComponent(fromISO) + '&toDate=' + encodeURIComponent(toISO))
+      .then(r => r.ok ? r.json() : [])
+      .then(rows => {
+        rows = Array.isArray(rows) ? rows.map(normalizeAttendance) : [];
+        let present = 0, absent = 0, miss = 0, hrs = 0;
+        tb.innerHTML = '';
+        rows.forEach(r => {
+          if (r.status === 'Week Off') return;
+          if (r.status === 'Absent') absent++;
+          else if (r.status === 'Miss Punch') miss++;
+          else present++;
+          hrs += r.hrs || 0;
+          const d = parseISO(r.punchdate);
+          tb.innerHTML += `<tr class="table-row transition">
+            <td class="py-2.5 px-3 mono text-slate-300">${pad(d.getDate())}-${MONTHS[d.getMonth()]}</td>
+            <td class="py-2.5 px-3 text-slate-400">${DAYS[d.getDay()]}</td>
+            <td class="py-2.5 px-3 text-emerald-300 mono">${r.intime || '--'}</td>
+            <td class="py-2.5 px-3 text-rose-300 mono">${r.outtime || '--'}</td>
+            <td class="py-2.5 px-3 text-white font-semibold">${r.hrs || '--'}</td>
+            <td class="py-2.5 px-3">${statusBadge(r.status)}</td></tr>`;
+        });
+        if (!rows.length) tb.innerHTML = '<tr><td colspan="6" class="py-6 text-center text-slate-500">No records for this week.</td></tr>';
+        document.getElementById('empWeekPresentCount').textContent = present;
+        document.getElementById('empWeekAbsentCount').textContent  = absent;
+        document.getElementById('empWeekMissCount').textContent    = miss;
+        document.getElementById('empWeekHoursCount').textContent   = hrs.toFixed(1);
+      });
+  } else {
+    // Offline fallback: use local data
+    const rows = attBetween(loggedInEmployee.paycode, fromISO, toISO);
+    rows.forEach(r => {
+      if (r.status === 'Week Off') return;
+      if (r.status === 'Absent') absent++;
+      else if (r.status === 'Miss Punch') miss++;
+      else present++;
+      hrs += r.hrs || 0;
+      const d = parseISO(r.punchdate);
+      tb.innerHTML += `<tr class="table-row transition">
+        <td class="py-2.5 px-3 mono text-slate-300">${pad(d.getDate())}-${MONTHS[d.getMonth()]}</td>
+        <td class="py-2.5 px-3 text-slate-400">${DAYS[d.getDay()]}</td>
+        <td class="py-2.5 px-3 text-emerald-300 mono">${r.intime || '--'}</td>
+        <td class="py-2.5 px-3 text-rose-300 mono">${r.outtime || '--'}</td>
+        <td class="py-2.5 px-3 text-white font-semibold">${r.hrs || '--'}</td>
+        <td class="py-2.5 px-3">${statusBadge(r.status)}</td></tr>`;
+    });
+    if (!rows.length) tb.innerHTML = '<tr><td colspan="6" class="py-6 text-center text-slate-500">No records for this week.</td></tr>';
+    document.getElementById('empWeekPresentCount').textContent = present;
+    document.getElementById('empWeekAbsentCount').textContent  = absent;
+    document.getElementById('empWeekMissCount').textContent    = miss;
+    document.getElementById('empWeekHoursCount').textContent   = hrs.toFixed(1);
+  }
 }
 
 function buildMonthOptions(sel){
@@ -2013,27 +2407,57 @@ function renderEmpMonthly(){
   if (!sel.options.length) buildMonthOptions(sel);
   const tb = document.getElementById('empMonthlyTable'); tb.innerHTML = '';
   const [y, m] = sel.value.split('-').map(Number);
-  const rows = attRows(loggedInEmployee.paycode).filter(r => { const d = parseISO(r.punchdate); return d.getFullYear() === y && d.getMonth() === m - 1; });
-  const st = monthStats(loggedInEmployee.paycode, y, m - 1);
+  const fromISO = y + '-' + pad(m) + '-01';
+  const toISO = y + '-' + pad(m) + '-' + new Date(y, m, 0).getDate();
   const daysInMonth = new Date(y, m, 0).getDate();
   document.getElementById('empMonthTotalDays').textContent = daysInMonth;
-  document.getElementById('empMonthPresent').textContent = st.present;
-  document.getElementById('empMonthAbsent').textContent  = st.absent;
-  document.getElementById('empMonthMiss').textContent    = st.miss;
-  document.getElementById('empMonthHolidays').textContent = st.off;
-  rows.reverse().forEach(r => {
-    const d = parseISO(r.punchdate);
-    tb.innerHTML += `<tr class="table-row transition">
-      <td class="py-2.5 px-3 mono text-slate-300">${pad(d.getDate())}-${MONTHS[d.getMonth()]}</td>
-      <td class="py-2.5 px-3 text-slate-400">${DAYS[d.getDay()]}</td>
-      <td class="py-2.5 px-3 text-emerald-300 mono">${r.intime || '--'}</td>
-      <td class="py-2.5 px-3 text-rose-300 mono">${r.outtime || '--'}</td>
-      <td class="py-2.5 px-3 text-white font-semibold">${r.hrs || '--'}</td>
-      <td class="py-2.5 px-3">${statusBadge(r.status)}</td>
-      <td class="py-2.5 px-3 text-slate-400">${esc(r.remarks)}</td></tr>`;
-  });
-  if (!rows.length) tb.innerHTML = '<tr><td colspan="7" class="py-6 text-center text-slate-500">No records in this month.</td></tr>';
-  setTimeout(drawEmpMonthBar, 50);
+  if (liveMode === 'live') {
+    apiFetch('/employee/monthly?fromDate=' + encodeURIComponent(fromISO) + '&toDate=' + encodeURIComponent(toISO))
+      .then(r => r.ok ? r.json() : [])
+      .then(rows => {
+        rows = Array.isArray(rows) ? rows.map(normalizeAttendance) : [];
+        const st = monthStatsFromRows(rows);
+        document.getElementById('empMonthPresent').textContent = st.present;
+        document.getElementById('empMonthAbsent').textContent  = st.absent;
+        document.getElementById('empMonthMiss').textContent    = st.miss;
+        document.getElementById('empMonthHolidays').textContent = st.off;
+        tb.innerHTML = '';
+        rows.reverse().forEach(r => {
+          const d = parseISO(r.punchdate);
+          tb.innerHTML += `<tr class="table-row transition">
+            <td class="py-2.5 px-3 mono text-slate-300">${pad(d.getDate())}-${MONTHS[d.getMonth()]}</td>
+            <td class="py-2.5 px-3 text-slate-400">${DAYS[d.getDay()]}</td>
+            <td class="py-2.5 px-3 text-emerald-300 mono">${r.intime || '--'}</td>
+            <td class="py-2.5 px-3 text-rose-300 mono">${r.outtime || '--'}</td>
+            <td class="py-2.5 px-3 text-white font-semibold">${r.hrs || '--'}</td>
+            <td class="py-2.5 px-3">${statusBadge(r.status)}</td>
+            <td class="py-2.5 px-3 text-slate-400">${esc(r.remarks)}</td></tr>`;
+        });
+        if (!rows.length) tb.innerHTML = '<tr><td colspan="7" class="py-6 text-center text-slate-500">No records in this month.</td></tr>';
+        setTimeout(drawEmpMonthBarFromRows, 50, rows);
+      });
+  } else {
+    // Offline fallback: use local data
+    const rows = attRows(loggedInEmployee.paycode).filter(r => { const d = parseISO(r.punchdate); return d.getFullYear() === y && d.getMonth() === m - 1; });
+    const st = monthStats(loggedInEmployee.paycode, y, m - 1);
+    document.getElementById('empMonthPresent').textContent = st.present;
+    document.getElementById('empMonthAbsent').textContent  = st.absent;
+    document.getElementById('empMonthMiss').textContent    = st.miss;
+    document.getElementById('empMonthHolidays').textContent = st.off;
+    rows.reverse().forEach(r => {
+      const d = parseISO(r.punchdate);
+      tb.innerHTML += `<tr class="table-row transition">
+        <td class="py-2.5 px-3 mono text-slate-300">${pad(d.getDate())}-${MONTHS[d.getMonth()]}</td>
+        <td class="py-2.5 px-3 text-slate-400">${DAYS[d.getDay()]}</td>
+        <td class="py-2.5 px-3 text-emerald-300 mono">${r.intime || '--'}</td>
+        <td class="py-2.5 px-3 text-rose-300 mono">${r.outtime || '--'}</td>
+        <td class="py-2.5 px-3 text-white font-semibold">${r.hrs || '--'}</td>
+        <td class="py-2.5 px-3">${statusBadge(r.status)}</td>
+        <td class="py-2.5 px-3 text-slate-400">${esc(r.remarks)}</td></tr>`;
+    });
+    if (!rows.length) tb.innerHTML = '<tr><td colspan="7" class="py-6 text-center text-slate-500">No records in this month.</td></tr>';
+    setTimeout(drawEmpMonthBar, 50);
+  }
 }
 
 function drawEmpMonthBar(){
@@ -2052,9 +2476,35 @@ function drawEmpMonthBar(){
       plugins:{ legend:{ display:false } },
       scales:{ x:{ ticks:{ color:'#94a3b8', font:{ size:8 } }, grid:{ display:false } },
                y:{ ticks:{ color:'#94a3b8' }, grid:{ color:'rgba(255,255,255,.05)' } } } }
+});
+}
+function monthStatsFromRows(rows){
+  let present = 0, absent = 0, miss = 0, off = 0, late = 0, hrs = 0, ot = 0;
+  rows.forEach(r => {
+    const label = classifyFrontRow(r);
+    if (label === 'Week Off') { off++; return; }
+    if (label === 'Present') present++;
+    else if (label === 'Miss Punch') miss++;
+    else absent++;
+    if (isLateRow(r)) late++;
+    hrs += r.hrs || 0; ot += r.ot || 0;
+  });
+  return { present, absent, miss, off, late, ot:+ot.toFixed(1), hrs:+hrs.toFixed(1), total: rows.length, rows };
+}
+function drawEmpMonthBarFromRows(rows){
+  const el = document.getElementById('empMonthlyBarChart'); if (!el) return;
+  const labels = rows.map(r => parseISO(r.punchdate).getDate()).reverse();
+  const data   = rows.map(r => r.hrs || 0).reverse();
+  if (chartInstances.empMonthBar) chartInstances.empMonthBar.destroy();
+  chartInstances.empMonthBar = new Chart(el, {
+    type:'bar',
+    data:{ labels, datasets:[{ label:'Hours', data, backgroundColor:'#6366f1', borderRadius:3 }] },
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ display:false } },
+      scales:{ x:{ ticks:{ color:'#94a3b8', font:{ size:8 } }, grid:{ display:false } },
+               y:{ ticks:{ color:'#94a3b8' }, grid:{ color:'rgba(255,255,255,.05)' } } } }
   });
 }
-
 /* ---------- Leave ---------- */
 const LEAVE_ENTITLEMENT = { 'Casual Leave':12, 'Sick Leave':8, 'Earned Leave':15, 'Unpaid Leave':0 };
 
@@ -2207,33 +2657,100 @@ function initHR(){
   sel.innerHTML = '';
   directoryEmployees().forEach(e => sel.innerHTML += `<option value="${esc(e.paycode)}">${esc(e.paycode)} - ${esc(e.empname)}</option>`);
   fillRosterFilters();
+  fillHRDailyFilters();
   hrRosterPage = 1;
-  document.getElementById('hrAllEmpSearch').oninput = debouncedLoadHrRoster;
+  // Reset all roster filters to defaults
+  const searchInput = document.getElementById('hrAllEmpSearch');
+  if (searchInput) searchInput.value = '';
+  const deptFilter = document.getElementById('hrAllEmpDeptFilter');
+  if (deptFilter) deptFilter.value = 'All';
+  const companyFilter = document.getElementById('hrAllEmpCompanyFilter');
+  if (companyFilter) companyFilter.value = '';
+  const genderFilter = document.getElementById('hrAllEmpGenderFilter');
+  if (genderFilter) genderFilter.value = '';
+  const catFilter = document.getElementById('hrAllEmpCategoryFilter');
+  if (catFilter) catFilter.value = '';
+  const desigFilter = document.getElementById('hrAllEmpDesignationFilter');
+  if (desigFilter) desigFilter.value = '';
+  const maritalFilter = document.getElementById('hrAllEmpMaritalFilter');
+  if (maritalFilter) maritalFilter.value = '';
+  const statusFilter = document.getElementById('hrAllEmpStatusFilter');
+  if (statusFilter) statusFilter.value = 'Y';
+  searchInput.oninput = debouncedLoadHrRoster;
   loadHrRoster();
   buildMobileNav('hr');
   showHRSection('hrOverview');
   loadHrFilters(); // overwrite fallback options with real DISTINCT master values
 }
 // Roster filter dropdowns: friendly labels, real values as option values so the
-// server-side /employees filters keep matching. Local directory is the fallback.
+// server-side /employees filters keep matching. Uses server-side DISTINCT values
+// from /hr/filters when available (all 346 employees), fallback to local directory.
 function fillRosterFilters(){
   const dir = directoryEmployees();
   const uniq = fn => Array.from(new Set(dir.map(fn).map(v => String(v == null ? '' : v).trim()).filter(Boolean))).sort();
   const L = masterNames.lists;
+  
+  // Departments: use server-side list if available, else local
   const deptSel = document.getElementById('hrAllEmpDeptFilter');
-  if (deptSel) { deptSel.innerHTML = '<option value="All">All Departments</option>'; departments().forEach(d => deptSel.innerHTML += `<option value="${esc(d)}">${esc(deptLabel(d))}</option>`); }
+  if (deptSel) { 
+    deptSel.innerHTML = '<option value="All">All Departments</option>'; 
+    const depts = (L.departments && L.departments.length) ? L.departments : departments();
+    depts.forEach(d => deptSel.innerHTML += `<option value="${esc(d)}">${esc(deptLabel(d))}</option>`); 
+  }
+  
+  // Companies: use server-side list if available, else local
   const companySel = document.getElementById('hrAllEmpCompanyFilter');
-  if (companySel) { companySel.innerHTML = '<option value="">All Companies</option>'; uniq(e => e.companycode).forEach(v => companySel.innerHTML += `<option value="${esc(v)}">${esc(companyLabel(v))}</option>`); }
+  if (companySel) { 
+    companySel.innerHTML = '<option value="">All Companies</option>'; 
+    const companies = (L.companies && L.companies.length) ? L.companies : uniq(e => e.companycode);
+    companies.forEach(v => companySel.innerHTML += `<option value="${esc(v)}">${esc(companyLabel(v))}</option>`); 
+  }
+  
   const genderSel = document.getElementById('hrAllEmpGenderFilter');
   if (genderSel) { genderSel.innerHTML = '<option value="">All Genders</option>'; (L.genders || uniq(e => e.sex)).forEach(v => genderSel.innerHTML += `<option value="${esc(v)}">${esc(sexLabel(v))}</option>`); }
+  
+  // Categories: use server-side list if available, else local
   const categorySel = document.getElementById('hrAllEmpCategoryFilter');
-  if (categorySel) { categorySel.innerHTML = '<option value="">All Categories</option>'; uniq(e => e.cat).forEach(v => categorySel.innerHTML += `<option value="${esc(v)}">${esc(catLabel(v))}</option>`); }
+  if (categorySel) { 
+    categorySel.innerHTML = '<option value="">All Categories</option>'; 
+    const cats = (L.categories && L.categories.length) ? L.categories : uniq(e => e.cat);
+    cats.forEach(v => categorySel.innerHTML += `<option value="${esc(v)}">${esc(catLabel(v))}</option>`); 
+  }
+  
   const designationSel = document.getElementById('hrAllEmpDesignationFilter');
   if (designationSel) { designationSel.innerHTML = '<option value="">All Designations</option>'; (L.designations || uniq(e => e.designation)).forEach(v => designationSel.innerHTML += `<option value="${esc(v)}">${esc(v)}</option>`); }
+  
   const maritalSel = document.getElementById('hrAllEmpMaritalFilter');
   if (maritalSel) { maritalSel.innerHTML = '<option value="">All Marital Statuses</option>'; (L.marital || uniq(e => e.ismarried)).forEach(v => maritalSel.innerHTML += `<option value="${esc(v)}">${esc(ynMarital(v))}</option>`); }
+  
   const statusSel = document.getElementById('hrAllEmpStatusFilter');
-  if (statusSel) { statusSel.innerHTML = '<option value="">All Employee Statuses</option>'; (L.statuses || uniq(e => e.active)).forEach(v => statusSel.innerHTML += `<option value="${esc(v)}">${esc(ynActive(v))}</option>`); }
+  if (statusSel) { 
+    const statuses = L.statuses || uniq(e => e.active);
+    statusSel.innerHTML = '<option value="Y">Active</option><option value="N">Inactive</option><option value="ALL">All</option>'; 
+    statuses.forEach(v => { const val = String(v).trim().toUpperCase(); if (val === 'Y' || val === 'N') return; statusSel.innerHTML += `<option value="${esc(val)}">${esc(ynActive(v))}</option>`; }); 
+    if (!statusSel.value) statusSel.value = 'Y';
+  }
+}
+
+// Populate Daily Master Report dropdowns with server-side master data
+function fillHRDailyFilters(){
+  const L = masterNames.lists;
+  
+  // Departments
+  const deptSel = document.getElementById('hrDailyDeptFilter');
+  if (deptSel) { 
+    deptSel.innerHTML = '<option value="All">All Departments</option>'; 
+    const depts = (L.departments && L.departments.length) ? L.departments : departments();
+    depts.forEach(d => deptSel.innerHTML += `<option value="${esc(d)}">${esc(deptLabel(d))}</option>`); 
+  }
+  
+  // Companies
+  const companySel = document.getElementById('hrDailyCompanyFilter');
+  if (companySel) { 
+    companySel.innerHTML = '<option value="">All Companies</option>'; 
+    const companies = (L.companies && L.companies.length) ? L.companies : Array.from(new Set(directoryEmployees().map(e => e.companycode).filter(Boolean))).sort();
+    companies.forEach(v => companySel.innerHTML += `<option value="${esc(v)}">${esc(companyLabel(v))}</option>`); 
+  }
 }
 // Real DISTINCT employee-master values (server-side) for every roster dropdown.
 async function loadHrFilters(){
@@ -2249,11 +2766,15 @@ async function loadHrFilters(){
       genders: Array.isArray(f.genders) ? f.genders : undefined,
       designations: Array.isArray(f.designations) ? f.designations : undefined,
       marital: Array.isArray(f.maritalStatuses) ? f.maritalStatuses : undefined,
-      statuses: Array.isArray(f.statuses) ? f.statuses : undefined
+      statuses: Array.isArray(f.statuses) ? f.statuses : undefined,
+      departments: Array.isArray(f.departments) ? f.departments.map(d => d.code).filter(Boolean) : undefined,
+      companies: Array.isArray(f.companies) ? f.companies.map(c => c.code).filter(Boolean) : undefined,
+      categories: Array.isArray(f.categories) ? f.categories.map(c => c.code).filter(Boolean) : undefined
     };
     const ids = ['hrAllEmpDeptFilter','hrAllEmpCompanyFilter','hrAllEmpGenderFilter','hrAllEmpCategoryFilter','hrAllEmpDesignationFilter','hrAllEmpMaritalFilter','hrAllEmpStatusFilter'];
     const keep = {}; ids.forEach(id => { keep[id] = document.getElementById(id)?.value; });
     fillRosterFilters();
+    fillHRDailyFilters();
     ids.forEach(id => { const el = document.getElementById(id); if (el && keep[id] && Array.from(el.options).some(o => o.value === keep[id])) el.value = keep[id]; });
   } catch (e) { /* local fallback options remain */ }
 }
@@ -2265,6 +2786,7 @@ let hrRosterTotal = 0;
 let hrRosterSearchTimer = null;
 function debouncedLoadHrRoster(){
   clearTimeout(hrRosterSearchTimer);
+  hrRosterPage = 1; // Reset to page 1 on any filter/search change
   hrRosterSearchTimer = setTimeout(loadHrRoster, 250);
 }
 async function loadHrRoster(){
@@ -2294,8 +2816,6 @@ async function loadHrRoster(){
   // Do NOT overwrite the full directory: roster paging uses `employees`,
   // while overview/charts/today views use `allEmployees`.
   document.getElementById('hrRosterPageInfo').textContent = `Page ${data.page} of ${Math.max(1, Math.ceil(hrRosterTotal / data.pageSize))} (${hrRosterTotal} employees)`;
-  const sel = document.getElementById('hrEmpSelect');
-  sel.innerHTML = directoryEmployees().map(e => `<option value="${esc(e.paycode)}">${esc(e.paycode)} - ${esc(e.empname)}</option>`).join('');
   renderAllEmployees();
 }
 function changeHrRosterPage(delta){
@@ -2303,14 +2823,24 @@ function changeHrRosterPage(delta){
   hrRosterPage = Math.min(max, Math.max(1, hrRosterPage + delta));
   loadHrRoster();
 }
+// Clear Filters: saare roster filters reset + fresh unfiltered list server se.
+function clearHrRosterFilters(){
+  clearTimeout(hrRosterSearchTimer); // pending debounced search bhi cancel
+  const search = document.getElementById('hrAllEmpSearch'); if (search) search.value = '';
+  ['hrAllEmpCompanyFilter','hrAllEmpGenderFilter','hrAllEmpCategoryFilter','hrAllEmpDesignationFilter','hrAllEmpMaritalFilter'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  const dept = document.getElementById('hrAllEmpDeptFilter'); if (dept) dept.value = 'All';
+  const status = document.getElementById('hrAllEmpStatusFilter'); if (status) status.value = 'Y'; // Default to Active
+  hrRosterPage = 1;
+  loadHrRoster(); // fresh /employees fetch — cached filtered results nahi
+}
 
-const HR_SECTIONS = { hrOverview:'hrOverview', hrAllEmp:'hrAllEmp', hrSingleEmp:'hrSingleEmp', hrCategory:'hrCategory', hrDaily:'hrDaily', hrCelebrations:'hrCelebrations', hrMarriage:'hrMarriage', hrLeave:'hrLeave' };
+const HR_SECTIONS = { hrOverview:'hrOverview', hrAllEmp:'hrAllEmp', hrSingleEmp:'hrSingleEmp', hrCategory:'hrCategory', hrDaily:'hrDaily', hrCelebrations:'hrCelebrations', hrMarriage:'hrMarriage', hrEmail:'hrEmail', hrLeave:'hrLeave' };
 const HR_TITLES = {
   hrOverview:'Executive Overview', hrAllEmp:'All Employees Roster', hrSingleEmp:'Single Employee Audit',
   hrCategory:'Category-wise Analytics', hrDaily:'Daily Master Report', hrCelebrations:'Birthdays & Anniversaries',
-  hrMarriage:'Marriage Anniversary Register', hrLeave:'Leave Management'
+  hrMarriage:'Marriage Anniversary Register', hrEmail:'Email Configuration', hrLeave:'Leave Management'
 };
-function showHRSection(sec){
+async function showHRSection(sec){
   Object.entries(HR_SECTIONS).forEach(([k,id]) => {
     document.getElementById(id).classList.add('hidden');
     const side = document.getElementById('hrSide_' + k); if (side) side.classList.remove('active');
@@ -2320,12 +2850,13 @@ function showHRSection(sec){
   document.getElementById('hrSectionTitle').textContent = HR_TITLES[sec];
   buildMobileNav('hr', sec);
   if (sec === 'hrOverview') { renderHRStats(); renderHRToday(); renderResetRequests(); renderCelebrationWidgets(); setTimeout(drawHRCharts, 60); }
-  if (sec === 'hrAllEmp') renderAllEmployees();
-  if (sec === 'hrSingleEmp') loadSingleEmpData();
+  if (sec === 'hrAllEmp') { loadHrRoster(); }
+  if (sec === 'hrSingleEmp') { await ensureAllEmployeesLoaded(); loadSingleEmpData(); }
   if (sec === 'hrCategory') { setCategoryView(activeCategoryTimeline); }
   if (sec === 'hrDaily') renderHRDaily();
   if (sec === 'hrCelebrations') renderCelebrationsPage();
   if (sec === 'hrMarriage') renderMarriageTable();
+  if (sec === 'hrEmail') loadEmailSection();
   if (sec === 'hrLeave') renderHRLeave();
 }
 
@@ -2356,12 +2887,17 @@ function renderHRStats(){
   document.getElementById('hrPunchedPct').textContent = (punched / total * 100).toFixed(1) + '%';
 }
 
-function renderHRToday(){
+async function renderHRToday(){
   const tb = document.getElementById('hrTodaySummary'); if (!tb) return;
-  tb.innerHTML = '';
   const t = todayISO();
+  let attendanceMap = new Map();
+  // Use local cached data (loaded at startup with days=1) instead of API call
   overviewEmployees().forEach(e => {
-    const r = attRows(e.paycode).find(x => x.punchdate === t) || { status:'No Record', intime:null, outtime:null };
+    attendanceMap.set(e.paycode, attRows(e.paycode).find(x => x.punchdate === t) || { status:'No Record', intime:null, outtime:null });
+  });
+  tb.innerHTML = '';
+  overviewEmployees().forEach(e => {
+    const r = attendanceMap.get(e.paycode);
     tb.innerHTML += `<tr class="table-row transition">
       <td class="py-2.5 px-3 mono text-indigo-300">${esc(e.paycode)}</td>
       <td class="py-2.5 px-3 text-white font-semibold">${esc(e.empname)}</td>
@@ -2375,11 +2911,15 @@ function renderHRToday(){
 
 function renderAllEmployees(){
   const q = (document.getElementById('hrAllEmpSearch').value || '').toLowerCase();
-  const dept = document.getElementById('hrAllEmpDeptFilter').value;
   const now = new Date();
-  const tb = document.getElementById('hrAllEmpTable'); tb.innerHTML = '';
+  const tb = document.getElementById('hrAllEmpTable'); 
+  if (!tb) return;
+  tb.innerHTML = '';
   const list = employees.filter(e => (String(e.empname||'').toLowerCase().includes(q) || String(e.paycode||'').toLowerCase().includes(q)));
-  if (!list.length) { tb.innerHTML = '<tr><td colspan="11" class="py-6 text-center text-slate-500">No employee matched.</td></tr>'; return; }
+  if (!list.length) { 
+    tb.innerHTML = '<tr><td colspan="11" class="py-6 text-center text-slate-500">No employee matched.</td></tr>'; 
+    return; 
+  }
   list.forEach(e => {
     // Backend SQL month counts when available (/employees attendanceStats); identical
     // local monthStats only as offline fallback. Never invent values.
@@ -2493,84 +3033,249 @@ async function loadSingleEmpData(){
     </div>`;
 }
 
+// Daily Master Report pagination state
+let hrDailyRows = [];
+let hrDailyPage = 1;
+let hrDailyPageSize = 50;
+
 async function renderHRDaily(){
   const tb = document.getElementById('hrDailyTable'); if (!tb) return;
-  tb.innerHTML = '';
-  const v = document.getElementById('hrDailyDatePicker').value || todayISO();
-  document.getElementById('hrDailyDatePicker').value = v;
+  tb.innerHTML = '<tr><td colspan="7" class="py-6 text-center text-slate-500">Loading attendance data...</td></tr>';
+  
+  // Initialize current date if empty
+  const fromDateInput = document.getElementById('hrDailyFromDate');
+  const toDateInput = document.getElementById('hrDailyToDate');
+  const today = todayISO();
+  if (!fromDateInput.value) fromDateInput.value = today;
+  if (!toDateInput.value) toDateInput.value = today;
+  
+  const fromDate = fromDateInput.value || today;
+  const toDate = toDateInput.value || fromDate;
+  const department = document.getElementById('hrDailyDeptFilter').value;
+  const company = document.getElementById('hrDailyCompanyFilter').value;
+  
+  // Build API params
+  const params = new URLSearchParams();
+  params.set('fromDate', fromDate);
+  params.set('toDate', toDate);
+  if (department && department !== 'All') params.set('departmentcode', department);
+  if (company && company !== 'All') params.set('companycode', company);
+  
   if (liveMode === 'live') {
-    const response = await apiFetch('/attendance?date=' + encodeURIComponent(v));
-    if (response.ok) {
-      const rows = await response.json();
-      const normalized = Array.isArray(rows) ? rows.map(normalizeAttendance) : [];
-      // Sirf isi date ki rows replace hoti hain (pehle jaisa hi result), bina poori
-      // 190-day list ko filter+concat+re-sort kiye.
-      DB.tbltimeregister = DB.tbltimeregister.filter(row => row.punchdate !== v).concat(normalized);
-      upsertAttRows(normalized);
+    try {
+      const response = await apiFetch('/hr/daily?' + params.toString());
+      if (response.ok) {
+        const rows = await response.json();
+        hrDailyRows = rows;
+        hrDailyPage = 1;
+        renderHRDailyRows();
+        return;
+      }
+    } catch (e) {
+      // fallback to local
     }
   }
-  overviewEmployees().forEach(e => {
-    const r = attRows(e.paycode).find(x => x.punchdate === v) || { status:'No Record', intime:null, outtime:null, hrs:0 };
+  // Fallback to local data
+  const localRows = overviewEmployees().map(e => {
+    const r = attRows(e.paycode).find(x => x.punchdate >= fromDate && x.punchdate <= toDate) || { status:'No Record', intime:null, outtime:null, hrs:0 };
+    return { paycode: e.paycode, empname: e.empname, departmentcode: e.departmentcode, ...r };
+  });
+  hrDailyRows = localRows;
+  hrDailyPage = 1;
+  renderHRDailyRows();
+}
+
+function changeHrDailyPage(delta){
+  const max = Math.max(1, Math.ceil(hrDailyRows.length / hrDailyPageSize));
+  hrDailyPage = Math.min(max, Math.max(1, hrDailyPage + delta));
+  renderHRDailyRows();
+}
+
+function renderHRDailyRows(){
+  const tb = document.getElementById('hrDailyTable'); if (!tb) return;
+  const rows = hrDailyRows;
+  tb.innerHTML = '';
+  if (!rows.length) {
+    tb.innerHTML = '<tr><td colspan="7" class="py-6 text-center text-slate-500">No attendance records found for the selected filters.</td></tr>';
+    document.getElementById('hrDailyPagination').classList.add('hidden');
+    return;
+  }
+  
+  // Pagination
+  const totalPages = Math.max(1, Math.ceil(rows.length / hrDailyPageSize));
+  if (hrDailyPage > totalPages) hrDailyPage = totalPages;
+  const start = (hrDailyPage - 1) * hrDailyPageSize;
+  const end = start + hrDailyPageSize;
+  const pageRows = rows.slice(start, end);
+  
+  // Update pagination UI
+  const paginationEl = document.getElementById('hrDailyPagination');
+  if (paginationEl) {
+    paginationEl.classList.remove('hidden');
+    document.getElementById('hrDailyPageInfo').innerHTML = `<span class="text-xs text-slate-400">Page ${hrDailyPage} of ${totalPages} (${rows.length} employees)</span>`;
+    const prevBtn = document.getElementById('hrDailyPrevBtn');
+    const nextBtn = document.getElementById('hrDailyNextBtn');
+    if (prevBtn) prevBtn.disabled = hrDailyPage <= 1;
+    if (nextBtn) nextBtn.disabled = hrDailyPage >= totalPages;
+  }
+  
+  // Format time from ISO timestamp to HH:MM (handles milliseconds)
+  const formatTime = (val) => {
+    if (!val || val === '--') return '--';
+    // If it's already a time format (HH:MM or HH:MM:SS), return as is
+    if (/^\d{1,2}:\d{2}(:\d{2})?$/.test(val)) return val.substring(0, 5);
+    // If it's an ISO timestamp, extract time portion (handles .000Z or .fffZ)
+    const isoMatch = val.match(/T(\d{2}:\d{2}:\d{2})/);
+    if (isoMatch) return isoMatch[1].substring(0, 5);
+    return val;
+  };
+  
+  pageRows.forEach(r => {
+    // Handle both normalized (intime/outtime/hrs/outTime) and raw (in1/out1/out2/hoursworked) fields
+    const intime = formatTime(r.intime || r.in1);
+    // Check normalized outTime first, then raw out1, then out2
+    const outtime = formatTime(r.outTime || r.outtime || r.out1 || r.out2);
+    const hrs = r.hrs || r.hoursworked || '--';
+    const status = r.status || 'A';
+    const isLate = r.isLate || (r.latearrival && Number(r.latearrival) > 0);
     tb.innerHTML += `<tr class="table-row transition">
-      <td class="py-2.5 px-3 mono text-indigo-300">${esc(e.paycode)}</td>
-      <td class="py-2.5 px-3 text-white font-semibold">${esc(e.empname)}</td>
-      <td class="py-2.5 px-3 text-slate-400">${esc(deptLabel(e.departmentcode))}</td>
-      <td class="py-2.5 px-3 text-emerald-300 mono">${r.intime || '--'}</td>
-      <td class="py-2.5 px-3 text-rose-300 mono">${r.outtime || '--'}</td>
-      <td class="py-2.5 px-3 text-white font-semibold">${r.hrs || '--'}</td>
-      <td class="py-2.5 px-3"><div class="flex items-center gap-1.5">${statusBadge(r.status)}${r.isLate ? '<span class="px-2 py-1 rounded-lg border border-indigo-500/30 bg-indigo-500/15 text-[10px] font-bold text-indigo-300">Late</span>' : ''}</div></td></tr>`;
+      <td class="py-2.5 px-3 mono text-indigo-300">${esc(r.paycode)}</td>
+      <td class="py-2.5 px-3 text-white font-semibold">${esc(r.empname)}</td>
+      <td class="py-2.5 px-3 text-slate-400">${esc(deptLabel(r.departmentcode))}</td>
+      <td class="py-2.5 px-3 text-emerald-300 mono">${intime}</td>
+      <td class="py-2.5 px-3 text-rose-300 mono">${outtime}</td>
+      <td class="py-2.5 px-3 text-white font-semibold">${hrs}</td>
+      <td class="py-2.5 px-3"><div class="flex items-center gap-1.5">${statusBadge(status)}${isLate ? '<span class="px-2 py-1 rounded-lg border border-indigo-500/30 bg-indigo-500/15 text-[10px] font-bold text-indigo-300">Late</span>' : ''}</div></td></tr>`;
   });
 }
 
+function clearHRDailyFilters(){
+  const today = todayISO();
+  document.getElementById('hrDailyFromDate').value = today;
+  document.getElementById('hrDailyToDate').value = today;
+  document.getElementById('hrDailyDeptFilter').value = 'All';
+  document.getElementById('hrDailyCompanyFilter').value = '';
+  document.getElementById('hrDailyPageSize').value = '50';
+  hrDailyPage = 1;
+  renderHRDaily();
+}
+
 function drawHRCharts(){
-  const depts = departments();
-  const now = new Date();
-  // Mutually exclusive per-department buckets for TODAY: Complete / Absent / Miss Punch.
-  // (Punched is NOT a slice here because it already contains Miss Punch employees.)
-  const complete = [], absent = [], miss = [];
-  depts.forEach(d => {
-    const s = deptRangeStatus(d, 'daily');
-    complete.push(s.complete); absent.push(s.absent); miss.push(s.miss);
-  });
-  if (chartInstances.hrDept) chartInstances.hrDept.destroy();
-  chartInstances.hrDept = new Chart(document.getElementById('hrDeptChart'), {
-    type:'bar',
-    data:{ labels:depts.map(deptLabel), datasets:[
-      { label:'Complete Attendance', data:complete, backgroundColor:'#10b981', borderRadius:5 },
-      { label:'Absent', data:absent, backgroundColor:'#f43f5e', borderRadius:5 },
-      { label:'Miss Punch', data:miss, backgroundColor:'#f59e0b', borderRadius:5 }
-    ]},
-    options:{ responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ labels:{ color:'#cbd5e1', font:{ size:11 } } } },
-      scales:{ x:{ ticks:{ color:'#94a3b8' }, grid:{ display:false } },
-               y:{ ticks:{ color:'#94a3b8' }, grid:{ color:'rgba(255,255,255,.05)' } } } }
+  // Department-wise Attendance and other charts are now drawn from backend data in drawDashboardCharts
+  // Just fetch the dashboard charts
+  fetchDashboardCharts();
+}
+
+async function fetchDashboardCharts(){
+  try {
+    const res = await fetch('/api/hr/dashboard-charts', {
+      headers: { 'Authorization': 'Bearer ' + sessionStorage.getItem('attendance_token') }
+    });
+    if (!res.ok) throw new Error('Failed to fetch dashboard charts');
+    const json = await res.json();
+    if (!json.success) throw new Error(json.message || 'API error');
+    drawDashboardCharts(json);
+  } catch (err) {
+    console.error('Dashboard charts error:', err);
+    // Show no-data states
+    ['hrDeptNoData','hrActivityNoData','hrLast10DaysNoData','hrCurrentlyPresentNoData','hrYesterdayNoData'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.classList.remove('hidden');
+    });
+  }
+}
+
+function drawDashboardCharts(json){
+  // Chart 1: Attendance Activity (Pie)
+  const c1 = json.chart1;
+  if (chartInstances.hrActivity) chartInstances.hrActivity.destroy();
+  const hasData1 = c1.data.some(v => v > 0);
+  document.getElementById('hrActivityNoData').classList.toggle('hidden', hasData1);
+  chartInstances.hrActivity = new Chart(document.getElementById('hrActivityChart'), {
+    type: 'pie',
+    data: { labels: c1.labels, datasets: [{ data: c1.data, backgroundColor: c1.colors, borderWidth: 0 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { color: '#cbd5e1', font: { size: 10 }, padding: 10 } },
+        tooltip: { callbacks: { label: ctx => `${ctx.label}: ${ctx.parsed}` } }
+      }
+    }
   });
 
-  const dir = overviewEmployees();
-  const labels = [], pct = [];
-  const staffTotal = dir.length || 1;
-  for (let i = 5; i >= 0; i--) {
-    const ref = new Date(now.getFullYear(), now.getMonth() - i, 15);
-    const refISO = indiaDateISO(ref);
-    const from = refISO.slice(0, 7) + '-01';
-    const to = refISO;
-    labels.push(MONTHS[ref.getMonth()]);
-    let p = 0;
-    dir.forEach(e => {
-      const hit = attRows(e.paycode).some(r => r.punchdate >= from && r.punchdate <= to && hasPunchRow(r));
-      if (hit) p++;
-    });
-    pct.push(+(p / staffTotal * 100).toFixed(1));
-  }
-  if (chartInstances.hrTrend) chartInstances.hrTrend.destroy();
-  chartInstances.hrTrend = new Chart(document.getElementById('hrTrendChart'), {
-    type:'line',
-    data:{ labels, datasets:[{ label:'Attendance %', data:pct, borderColor:'#6366f1', backgroundColor:'rgba(99,102,241,.15)', fill:true, tension:.4 }] },
-    options:{ responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ labels:{ color:'#cbd5e1', font:{ size:11 } } } },
-      scales:{ x:{ ticks:{ color:'#94a3b8' }, grid:{ color:'rgba(255,255,255,.05)' } },
-               y:{ suggestedMin:60, suggestedMax:100, ticks:{ color:'#94a3b8' }, grid:{ color:'rgba(255,255,255,.05)' } } } }
+  // Chart 2: Last 10 Days Presence (Bar)
+  const c2 = json.chart2;
+  if (chartInstances.hrLast10Days) chartInstances.hrLast10Days.destroy();
+  const hasData2 = c2.datasets.some(ds => ds.data.some(v => v > 0));
+  document.getElementById('hrLast10DaysNoData').classList.toggle('hidden', hasData2);
+  chartInstances.hrLast10Days = new Chart(document.getElementById('hrLast10DaysChart'), {
+    type: 'bar',
+    data: { labels: c2.labels, datasets: c2.datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#cbd5e1', font: { size: 10 } } } },
+      scales: {
+        x: { ticks: { color: '#94a3b8' }, grid: { display: false }, stacked: true },
+        y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,.05)' }, stacked: true }
+      }
+    }
   });
+
+  // Chart 3: Currently Present by Company (Horizontal Bar)
+  const c3 = json.chart3;
+  if (chartInstances.hrCurrentlyPresent) chartInstances.hrCurrentlyPresent.destroy();
+  const hasData3 = c3.data.some(v => v > 0);
+  document.getElementById('hrCurrentlyPresentNoData').classList.toggle('hidden', hasData3);
+  chartInstances.hrCurrentlyPresent = new Chart(document.getElementById('hrCurrentlyPresentChart'), {
+    type: 'bar',
+    data: { labels: c3.labels, datasets: [{ label: 'Employees Present', data: c3.data, backgroundColor: c3.backgroundColor, borderRadius: 5 }] },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,.05)' } },
+        y: { ticks: { color: '#94a3b8' }, grid: { display: false } }
+      }
+    }
+  });
+
+  // Chart 4: Yesterday's Attendance (Bar)
+  const c4 = json.chart4;
+  if (chartInstances.hrYesterday) chartInstances.hrYesterday.destroy();
+  const hasData4 = c4.data.some(v => v > 0);
+  document.getElementById('hrYesterdayNoData').classList.toggle('hidden', hasData4);
+  chartInstances.hrYesterday = new Chart(document.getElementById('hrYesterdayChart'), {
+    type: 'bar',
+    data: { labels: c4.labels, datasets: [{ data: c4.data, backgroundColor: c4.colors, borderRadius: 5 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#94a3b8' }, grid: { display: false } },
+        y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,.05)' } }
+      }
+    }
+  });
+
+  // Chart 5: Department-wise Attendance (Bar) - from backend
+  const c5 = json.chart5;
+  if (c5) {
+    if (chartInstances.hrDept) chartInstances.hrDept.destroy();
+    const hasData5 = (c5.datasets[0]?.data?.some(v => v > 0) || c5.datasets[1]?.data?.some(v => v > 0));
+    document.getElementById('hrDeptNoData').classList.toggle('hidden', hasData5);
+    chartInstances.hrDept = new Chart(document.getElementById('hrDeptChart'), {
+      type: 'bar',
+      data: { labels: c5.labels, datasets: c5.datasets },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { labels: { color: '#cbd5e1', font: { size: 10 } } } },
+        scales: {
+          x: { ticks: { color: '#94a3b8' }, grid: { display: false } },
+          y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,.05)' } }
+        }
+      }
+    });
+  }
 }
 
 /* =========================================================================
@@ -2649,7 +3354,7 @@ function categoryCounts(period){
       const hasOut = Boolean(r.out1 || r.out2 || r.outtime);
       return hasIn && hasOut;
     });
-    const hasIncomplete = rows.some(r => hasPunchRow(r) && !(Boolean(r.in1 || r.in2 || r.intime) && Boolean(r.out1 || r.out2 || r.outtime)));
+    const hasIncomplete = rows.some(r => hasPunchRow(r) && !(Boolean(r.in1 || r.in2 || r.intime) && Boolean(r.out1 || r.out2 || r.outtime)) && !isOngoingPunchRow(r));
     if (hasPunch) punched++;
     else absent++;
     if (hasComplete) complete++;
@@ -2720,7 +3425,7 @@ function deptRangeStatus(dept, per){
     const rows = attRows(e.paycode).filter(r => r.punchdate >= range.from && r.punchdate <= range.to)
       .filter(r => classifyFrontRow(r) !== 'Week Off');
     const hasComplete = rows.some(r => Boolean(r.in1 || r.in2 || r.intime) && Boolean(r.out1 || r.out2 || r.outtime));
-    const hasIncomplete = rows.some(r => hasPunchRow(r) && !(Boolean(r.in1 || r.in2 || r.intime) && Boolean(r.out1 || r.out2 || r.outtime)));
+    const hasIncomplete = rows.some(r => hasPunchRow(r) && !(Boolean(r.in1 || r.in2 || r.intime) && Boolean(r.out1 || r.out2 || r.outtime)) && !isOngoingPunchRow(r));
     if (hasComplete) complete++;
     else if (hasIncomplete) miss++;
     else absent++;
@@ -2750,9 +3455,8 @@ function drawCategoryCharts(){
   chartInstances.catDept = new Chart(document.getElementById('categoryDeptChart'), {
     type:'bar',
     data:{ labels:depts.map(deptLabel), datasets:[
-      { label:'Complete Attendance', data:complete, backgroundColor:'#10b981', borderRadius:4 },
-      { label:'Absent', data:absent, backgroundColor:'#f43f5e', borderRadius:4 },
-      { label:'Miss Punch', data:miss, backgroundColor:'#f59e0b', borderRadius:4 }
+      { label:'Present', data:complete, backgroundColor:'#10b981', borderRadius:4 },
+      { label:'Absent', data:absent, backgroundColor:'#f43f5e', borderRadius:4 }
     ]},
     options:{ responsive:true, maintainAspectRatio:false,
       plugins:{ legend:{ labels:{ color:'#cbd5e1', font:{ size:10 } } } },
@@ -2799,9 +3503,8 @@ async function refreshCategoryBackend(){
       chartInstances.catDept = new Chart(document.getElementById('categoryDeptChart'), {
         type:'bar',
         data:{ labels:b.departments.map(d => deptLabel(d.departmentcode)), datasets:[
-          { label:'Complete Attendance', data:b.departments.map(d => Number(d.complete) || 0), backgroundColor:'#10b981', borderRadius:4 },
-          { label:'Absent', data:b.departments.map(d => Number(d.absent) || 0), backgroundColor:'#f43f5e', borderRadius:4 },
-          { label:'Miss Punch', data:b.departments.map(d => Number(d.miss) || 0), backgroundColor:'#f59e0b', borderRadius:4 }
+          { label:'Present', data:b.departments.map(d => Number(d.complete) || 0), backgroundColor:'#10b981', borderRadius:4 },
+          { label:'Absent', data:b.departments.map(d => Number(d.absent) || 0), backgroundColor:'#f43f5e', borderRadius:4 }
         ]},
         options:{ responsive:true, maintainAspectRatio:false,
           plugins:{ legend:{ labels:{ color:'#cbd5e1', font:{ size:10 } } } },
@@ -2898,6 +3601,30 @@ function renderCelebrationWidgets(){
     const e = directoryEmployees().find(x => x.paycode === m.paycode) || { empname:m.paycode, paycode:m.paycode, departmentcode:'—', designation:'—' };
     return personRow(e, `<p class="text-[10px] text-rose-300 mt-0.5"><i class="fas fa-heart mr-1"></i>${pretty(m.anniversarydate)} • ${yearsCompleted(m.anniversarydate)} years</p>`);
   }).join('') : emptyRow('Aaj koi marriage anniversary nahi hai.');
+
+  renderNotificationBar();   // top-of-overview bar — isi existing refresh flow me update hota hai (koi extra polling nahi)
+}
+
+/* Executive Overview top notification bar — existing real-data helpers (birthdaysToday / annivToday / marriageToday) reuse.
+   Click par existing Employee Attendance Audit (openAudit) khulta hai. */
+function renderNotificationBar(){
+  const bar = document.getElementById('hrNotifBar'); if (!bar) return;
+  const items = [];
+  birthdaysToday().forEach(e => items.push({ icon: 'fa-cake-candles', cls: 'text-pink-300', text: e.empname + ' has a Birthday today', sub: e.paycode, paycode: e.paycode }));
+  annivToday().forEach(e => items.push({ icon: 'fa-trophy', cls: 'text-amber-300', text: e.empname + ' completes ' + yearsCompleted(e.dateofjoin) + ' years today', sub: e.paycode, paycode: e.paycode }));
+  marriageToday().forEach(m => {
+    const e = directoryEmployees().find(x => x.paycode === m.paycode) || { empname: m.paycode, paycode: m.paycode };
+    items.push({ icon: 'fa-heart', cls: 'text-rose-300', text: e.empname + ' has a Marriage Anniversary today', sub: m.paycode + ' • ' + yearsCompleted(m.anniversarydate) + ' yrs', paycode: e.paycode });
+  });
+  document.getElementById('hrNotifCount').textContent = items.length;
+  document.getElementById('hrNotifList').innerHTML = items.length ? items.map(n =>
+    `<button onclick="openAudit('${esc(n.paycode)}')" class="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition text-[11px] font-semibold text-left">
+      <i class="fas ${n.icon} ${n.cls} shrink-0"></i>
+      <span class="text-slate-200 truncate">${esc(n.text)}</span>
+      <span class="text-[10px] text-slate-500 mono shrink-0">${esc(n.sub)}</span>
+      <i class="fas fa-arrow-right text-[9px] text-slate-500 shrink-0"></i>
+    </button>`).join('')
+    : '<p class="text-[11px] text-slate-500">Aaj koi birthday ya anniversary notification nahi hai.</p>';
 }
 
 function renderCelebrationsPage(){
@@ -3230,6 +3957,494 @@ async function confirmMarriageImport(){
   }
 }
 
+/* ================= EMAIL CONTROL CENTER (HR-only) =================
+   Provider + credentials are owned by the server module server/email-provider.js.
+   The browser only ever receives masked hints — never a key/password.        */
+let emailCfgCache = null;
+let emailProviderCache = null;    // { provider, configured, hint, ... } — no secrets, ever
+let emailFiltersData = null;      // real company/department master from /api/hr/filters
+let emailBulkPreviewData = null;  // last "Preview Recipients" result — send only after preview
+let emailSingleSearchTimer = null;
+function emailApi(path, opts){ return apiFetch(path, opts); }
+function emailStatusCard(label, value, cls){ return `<div class="p-3.5 rounded-2xl bg-white/5 border border-white/5"><p class="text-[10px] uppercase font-bold text-slate-400">${label}</p><p class="text-sm font-bold mt-1 ${cls}">${value}</p></div>`; }
+/* Status cards are HEALTH-driven: green = working, amber = needs attention,
+   rose = blocked. Every non-green card carries the exact action needed. */
+function emailStatusCards(data){
+  const p = data.emailProvider || {};
+  const master = Number(data.masterEmailCount || 0);
+  const mapping = Number(data.mappingCount || 0);
+  const missing = Number(data.noEmailCount || 0);
+  const dbOk = !!(data.provider && data.provider.db);
+  const senderOk = !!(emailCfgCache && String(emailCfgCache.senderemail || '').trim());
+  const providerOk = !!p.configured;
+  const ready = providerOk && senderOk;
+  const note = p.hint || (p.source === 'env' ? 'Configured via server .env' : p.source === 'database' ? 'Saved in database (encrypted)' : '—');
+  return emailStatusCard('Email Service', ready ? 'Running ✓' : (providerOk ? 'Sender email missing' : 'Action required'),
+      ready ? 'text-emerald-300' : 'text-rose-300') +
+    emailStatusCard('Provider', providerOk ? esc(p.providerLabel || 'Configured ✓') : 'Not configured — Provider Config tab',
+      providerOk ? 'text-emerald-300' : 'text-rose-300') +
+    emailStatusCard('Sender Email', senderOk ? esc(emailCfgCache.senderemail) : 'hr@company.com set karo',
+      senderOk ? 'text-emerald-300' : 'text-rose-300') +
+    emailStatusCard('SQL Database', dbOk ? 'Connected ✓' : 'Not connected', dbOk ? 'text-emerald-300' : 'text-rose-300') +
+    emailStatusCard('Priority 1 — SQL e_mail1 (Savior)', String(master) + ' employees', master ? 'text-emerald-300' : 'text-amber-300') +
+    emailStatusCard('Priority 2 — HR Mapping (Import)', String(mapping) + ' mappings', mapping ? 'text-emerald-300' : 'text-sky-300') +
+    emailStatusCard('No Email Found', missing ? String(missing) + ' — import needed' : 'None ✓', missing ? 'text-rose-300' : 'text-emerald-300') +
+    emailStatusCard('Provider Setup Note', esc(note), providerOk ? 'text-slate-300' : 'text-amber-300');
+}
+function emailProviderTypeChanged(){
+  const type = document.getElementById('emProviderType').value;
+  document.getElementById('emBrevoFields').classList.toggle('hidden', type !== 'brevo');
+  document.getElementById('emSmtpFields').classList.toggle('hidden', type !== 'smtp');
+}
+/* Renders the server's health checks as an actionable list:
+   yellow/amber = needs attention, rose = blocked, green = everything ready.
+   Each row states WHAT is needed and WHERE to fix it (Provider Config / Email
+   Source tab), so no card is ever left as an unexplained colour. */
+async function loadEmailHealth(){
+  const box = document.getElementById('emHealthPanel');
+  if (!box) return;
+  try {
+    const r = await emailApi('/email/health');
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok || !d.success) { box.innerHTML = ''; return; }
+    emailProviderCache = d.provider || emailProviderCache;
+    const checks = d.checks || [];
+    const pending = checks.filter(c => !c.ok);
+    if (!pending.length) {
+      box.innerHTML = `<div class="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-200 font-semibold"><i class="fas fa-circle-check mr-1.5"></i>Email service fully configured — provider ready, sender email set, ${Number(d.recipientCount || 0)} employees ka email resolvable.</div>`;
+      return;
+    }
+    box.innerHTML = `<div class="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20">
+      <p class="text-[11px] font-bold text-amber-200 mb-2"><i class="fas fa-triangle-exclamation mr-1.5"></i>Email service ko ${pending.length} cheez chahiye (in order):</p>
+      <div class="space-y-1.5">${pending.map(c => `<div class="flex items-start gap-2 text-[11px] leading-relaxed">
+        <span class="mt-0.5 text-amber-300"><i class="fas fa-arrow-right"></i></span>
+        <span><strong class="text-white">${esc(c.label)}</strong> — <span class="text-amber-100">${esc(c.needs || 'configure karo')}</span> <span class="text-slate-400">(current: ${esc(c.value || '—')})</span></span></div>`).join('')}</div>
+      <p class="text-[10px] text-slate-400 mt-2.5">Fix karne ke baad upar wale cards apne aap green ho jayenge — server restart ki zarurat nahi.</p></div>`;
+  } catch (_) { box.innerHTML = ''; }
+}
+/* Fields are (re)filled from the SERVER's masked view — an API key/password is
+   never rendered back into the DOM, so saving can never overwrite it by mistake
+   (blank input = "keep existing", enforced server-side too). */
+function renderEmailProviderFields(p, cfg){
+  const prov = p.provider && p.provider !== 'none' ? p.provider : 'brevo';
+  document.getElementById('emProviderType').value = prov;
+  emailProviderTypeChanged();
+  document.getElementById('emSenderName').value = (cfg && cfg.sendername) || '';
+  document.getElementById('emSenderEmail').value = (cfg && cfg.senderemail) || '';
+  document.getElementById('emBrevoKey').value = '';
+  document.getElementById('emSmtpHost').value = (p.smtp && p.smtp.host) || '';
+  document.getElementById('emSmtpPort').value = (p.smtp && p.smtp.port) || (prov === 'smtp' ? 587 : '');
+  document.getElementById('emSmtpUser').value = (p.smtp && p.smtp.user) || '';
+  document.getElementById('emSmtpPassword').value = '';
+  document.getElementById('emSmtpSecure').checked = !!(p.smtp && p.smtp.secure);
+  const keyLine = (p.hasBrevoKey && p.brevoKeyHint)
+    ? `<i class="fas fa-shield-halved text-emerald-400 mr-1"></i><span class="text-emerald-300 font-bold">Brevo API key saved ✓</span> (${esc(p.brevoKeyHint)}) — ${p.source === 'env' ? 'server .env se load hui hai' : 'database me encrypted save hai'}.`
+    : '<i class="fas fa-circle-info text-slate-400 mr-1"></i>Brevo API key abhi save nahi hai.';
+  const pwLine = (p.smtp && p.smtp.hasPassword)
+    ? `<i class="fas fa-shield-halved text-emerald-400 mr-1"></i><span class="text-emerald-300 font-bold">SMTP password saved ✓</span> (${esc(p.smtp.passwordHint)}).`
+    : '<i class="fas fa-circle-info text-slate-400 mr-1"></i>SMTP password abhi save nahi hai.';
+  const stateLine = p.configured
+    ? `<i class="fas fa-circle-check text-emerald-400 mr-1"></i><span class="text-emerald-300 font-bold">Email service running ✓</span> — ${esc(p.providerLabel || '')}${p.source === 'env' ? ' • server .env fallback' : p.source === 'database' ? ' • settings database me' : ''}.`
+    : `<i class="fas fa-triangle-exclamation text-rose-400 mr-1"></i><span class="text-rose-300 font-bold">Email service not configured.</span> ${esc(p.hint || '')}`;
+  document.getElementById('emApiKeyStatus').innerHTML =
+    `<div class="space-y-1">${stateLine}<div>${keyLine}</div><div>${pwLine}</div>` +
+    '<div class="text-slate-500">Secrets sirf server par (encrypted) rehte hain — browser/frontend code me kabhi nahi jaate.</div></div>';
+}
+async function saveEmailProvider(){
+  const btn = document.getElementById('emSaveBtn'); btn.disabled = true;
+  const provider = document.getElementById('emProviderType').value;
+  const payload = {
+    provider,
+    sendername: document.getElementById('emSenderName').value.trim(),
+    senderemail: document.getElementById('emSenderEmail').value.trim()
+  };
+  const key = document.getElementById('emBrevoKey').value.trim();
+  if (key) payload.brevoApiKey = key;   // blank = keep the stored key (merge-safe)
+  if (provider === 'smtp') {
+    payload.smtpHost = document.getElementById('emSmtpHost').value.trim();
+    payload.smtpPort = Number(document.getElementById('emSmtpPort').value) || 587;
+    payload.smtpUser = document.getElementById('emSmtpUser').value.trim();
+    payload.smtpSecure = document.getElementById('emSmtpSecure').checked;
+    const pw = document.getElementById('emSmtpPassword').value;
+    if (pw) payload.smtpPassword = pw;  // blank = keep the stored password (merge-safe)
+  }
+  try {
+    const r = await emailApi('/email/provider', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    const d = await r.json().catch(() => ({}));
+    if (r.ok && d.success) {
+      showToast('Email', 'Provider + sender saved ✓ Ab "Send Test" se verify karo.');
+      document.getElementById('emBrevoKey').value = '';
+      document.getElementById('emSmtpPassword').value = '';
+      loadEmailSection();
+    } else {
+      showToast('Email', d.message || 'Provider save failed');
+      document.getElementById('emApiKeyStatus').innerHTML = `<i class="fas fa-circle-xmark text-rose-400 mr-1"></i><span class="text-rose-300 font-bold">${esc(d.message || 'Provider save failed')}</span>`;
+    }
+  } catch (e) { showToast('Email', e.message || 'Provider save failed'); }
+  finally { btn.disabled = false; }
+}
+/* Rows jin employees ka email dono source me nahi mila (read-only preview →
+   CSV download). Ye file Excel me bhar kar turant import ki ja sakti hai. */
+async function exportMissingEmails(){
+  const btn = document.getElementById('emMissingBtn'); if (btn) btn.disabled = true;
+  try {
+    const r = await emailApi('/email/missing');
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok || !d.success) { showToast('Email', d.message || 'Missing email list failed'); return; }
+    const rows = [['CompanyCode', 'Paycode', 'DepartmentCode', 'EmployeeName', 'Email']];
+    // Server sends "employeename" (and legacy rows may use "empname") — accept both.
+    (d.rows || []).forEach(x => rows.push([x.companycode || '', x.paycode || '', x.departmentcode || '', x.employeename || x.empname || '', '']));
+    if (rows.length === 1) { showToast('Email', 'Sab employees ka email available hai — koi missing row nahi ✓'); return; }
+    downloadCSV('employee-email-missing', rows);
+    showToast('Email', `${rows.length - 1} missing employee rows export ho gayi ✓`);
+  } catch (e) { showToast('Email', e.message || 'Missing email list failed'); }
+  finally { if (btn) btn.disabled = false; }
+}
+
+/* Template tab ke saare subject/body inputs + auto-send toggles server config
+   se bhare jaate hain. loadEmailSection() se alag function hai taaki Templates
+   tab dobara render ho sake bina provider fields ko chhede (merge-safe). */
+function renderEmailTemplateFields(cfg){
+  const c = cfg || {};
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ''; };
+  const tick = (id, v) => { const el = document.getElementById(id); if (el) el.checked = !!v; };
+  set('emBdaySubject', c.birthdaysubject); set('emBdayBody', c.birthdaybody);
+  set('emWasSubject', c.workanniversarysubject); set('emWasBody', c.workanniversarybody);
+  set('emMarSubject', c.marriagesubject); set('emMarBody', c.marriagebody);
+  set('emCustomSubject', c.customsubject); set('emCustomBody', c.custombody);
+  tick('emBdayEnabled', c.birthdayenabled); tick('emWasEnabled', c.workanniversaryenabled);
+  tick('emMarEnabled', c.marriageenabled);
+}
+function emailDateISO(d){ return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function emailTemplateFor(type){
+  const c = emailCfgCache || {};
+  return {
+    'Birthday': [c.birthdaysubject, c.birthdaybody],
+    'Work Anniversary': [c.workanniversarysubject, c.workanniversarybody],
+    'Marriage Anniversary': [c.marriagesubject, c.marriagebody],
+    'Custom': [c.customsubject, c.custombody]
+  }[type] || ['', ''];
+}
+function showEmailTab(tab){
+  ['provider', 'source', 'single', 'bulk', 'templates', 'logs'].forEach(t => {
+    const panel = document.getElementById('emTab-' + t); if (panel) panel.classList.toggle('hidden', t !== tab);
+    const btn = document.getElementById('emTabBtn-' + t); if (btn) btn.classList.toggle('active', t === tab);
+  });
+  if (tab === 'bulk') ensureEmailFilterOptions();
+  if (tab === 'logs') loadEmailLog();
+}
+async function loadEmailSection(){
+  try {
+    const r = await emailApi('/email/config');
+    if (!r.ok) throw new Error((await r.json().catch(() => ({}))).message || 'Email API unavailable');
+    const data = await r.json();
+    emailCfgCache = data.config || {};
+    emailProviderCache = data.emailProvider || {};
+    const c = emailCfgCache;
+    document.getElementById('emailStatusRow').innerHTML = emailStatusCards(data);
+    renderEmailProviderFields(emailProviderCache, c);
+    renderEmailTemplateFields(c);
+    loadEmailHealth();
+    document.getElementById('emBulkDate').value = emailDateISO(new Date());
+    document.getElementById('emSourceCounts').innerHTML =
+      emailStatusCard('Priority 1 — SQL e_mail1 (Savior)', String(data.masterEmailCount || 0) + ' employees', (data.masterEmailCount ? 'text-emerald-300' : 'text-amber-300')) +
+      emailStatusCard('Priority 2 — HR Mapping (Import)', String(data.mappingCount || 0) + ' mappings', (data.mappingCount ? 'text-emerald-300' : 'text-sky-300')) +
+      emailStatusCard('No Email Found', (data.noEmailCount ? String(data.noEmailCount) + ' — Export Missing (CSV) karke import karo' : 'None ✓'), (data.noEmailCount ? 'text-rose-300' : 'text-emerald-300'));
+    document.getElementById('emBulkDate').value = emailDateISO(new Date());
+    bulkTypeChanged();
+    ensureEmailFilterOptions();
+    loadEmailLog();
+  } catch (e) {
+    document.getElementById('emailStatusRow').innerHTML = `<div class="col-span-2 md:col-span-4 p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-200 font-semibold"><i class="fas fa-triangle-exclamation mr-1.5"></i>${esc(e.message || 'Email section load failed')}</div>`;
+    showToast('Email', e.message || 'Email section load failed');
+  }
+}
+/* Bulk filters: REAL company/department master (Savior SQL) via existing /api/hr/filters */
+async function ensureEmailFilterOptions(){
+  const sel = document.getElementById('emFilterCompany');
+  if (!sel) return;
+  if (!emailFiltersData) {
+    try {
+      const r = await emailApi('/hr/filters');
+      if (r.ok) { const f = await r.json(); emailFiltersData = { companies: f.companies || [], departments: f.departments || [] }; }
+    } catch (_) { /* keep existing options — real data only, no invented values */ }
+  }
+  if (!emailFiltersData || !emailFiltersData.companies.length) return;
+  const keep = sel.value;
+  sel.innerHTML = '<option value="ALL">All Companies</option>' + emailFiltersData.companies.map(c => `<option value="${esc(c.code)}">${esc(c.code)}${c.name ? ' — ' + esc(c.name) : ''}</option>`).join('');
+  if (keep && Array.from(sel.options).some(o => o.value === keep)) sel.value = keep;
+  populateEmailDeptFilter();
+}
+function populateEmailDeptFilter(){
+  const dep = document.getElementById('emFilterDept');
+  if (!dep) return;
+  const keep = dep.value;
+  const depts = (emailFiltersData && emailFiltersData.departments) || [];
+  // Company + Department filter COMBINED server-side par apply hota hai (employee dono match kare).
+  dep.innerHTML = '<option value="">All Departments</option>' + depts.map(d => `<option value="${esc(d.code)}">${esc(d.code)}${d.name ? ' — ' + esc(d.name) : ''}</option>`).join('');
+  if (keep && Array.from(dep.options).some(o => o.value === keep)) dep.value = keep;
+}
+/* ---- SINGLE EMAIL: real SQL search → resolve (SQL first, mapping fallback) → send ---- */
+function debouncedSingleSearch(){
+  clearTimeout(emailSingleSearchTimer);
+  emailSingleSearchTimer = setTimeout(searchSingleEmployees, 300);
+}
+async function searchSingleEmployees(){
+  const q = document.getElementById('emSingleSearch').value.trim();
+  const box = document.getElementById('emSingleResults');
+  if (!q) { box.classList.add('hidden'); box.innerHTML = ''; return; }
+  try {
+    const r = await emailApi('/employees?search=' + encodeURIComponent(q) + '&pageSize=12');
+    if (!r.ok) throw new Error('Employee search failed');
+    const d = await r.json();
+    const rows = d.rows || [];
+    box.innerHTML = rows.length
+      ? rows.map(e => `<button onclick="selectSingleEmployee('${esc(e.paycode)}')" class="w-full text-left px-3 py-2 rounded-xl hover:bg-white/10 flex items-center justify-between gap-3"><span class="text-xs font-bold text-white truncate">${esc(e.empname)}</span><span class="text-[10px] mono text-indigo-300 whitespace-nowrap">${esc(e.paycode)} • ${esc(e.companycode || '—')}/${esc(e.departmentcode || '—')}</span></button>`).join('')
+      : '<p class="px-3 py-2 text-xs text-slate-400">Koi employee nahi mila (real Savior SQL search).</p>';
+    box.classList.remove('hidden');
+  } catch (e) { showToast('Single Email', e.message); }
+}
+async function selectSingleEmployee(paycode){
+  const card = document.getElementById('emSingleCard');
+  card.classList.remove('hidden');
+  card.innerHTML = '<p class="text-xs text-slate-400">Real employee record load ho raha hai…</p>';
+  document.getElementById('emSingleResults').classList.add('hidden');
+  document.getElementById('emSingleStatus').innerHTML = '';
+  try {
+    const r = await emailApi('/email/resolve?paycode=' + encodeURIComponent(paycode));
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.message || 'Employee resolve failed');
+    document.getElementById('emSinglePaycode').value = d.employee.paycode;
+    const src = d.emailSource || '';
+    const srcCls = src === 'SQL (e_mail1)' ? 'text-amber-300 bg-amber-500/10 border-amber-500/20'
+      : src.indexOf('HR Mapping') === 0 ? 'text-sky-300 bg-sky-500/10 border-sky-500/20'
+      : 'text-rose-300 bg-rose-500/10 border-rose-500/20';
+    card.innerHTML = `
+      <div class="flex items-center justify-between gap-2 mb-2.5">
+        <p class="text-xs font-bold text-white">${esc(d.employee.empname || d.employee.paycode)}</p>
+        <span class="text-[9px] uppercase font-bold px-2 py-1 rounded-lg border ${srcCls}">Source: ${esc(src)}</span>
+      </div>
+      <div class="grid grid-cols-2 gap-1.5 text-[11px]">
+        <p class="text-slate-400">Paycode: <span class="mono text-indigo-300">${esc(d.employee.paycode)}</span></p>
+        <p class="text-slate-400">Company: <span class="text-slate-200">${esc(d.employee.companycode || '—')}</span></p>
+        <p class="text-slate-400">Department: <span class="text-slate-200">${esc(d.employee.departmentcode || '—')}</span></p>
+        <p class="text-slate-400">Designation: <span class="text-slate-200">${esc(d.employee.designation || '—')}</span></p>
+        <p class="col-span-2 text-slate-400">Email: <span class="mono ${d.hasEmail ? 'text-emerald-300' : 'text-rose-300'}">${esc(d.email || '— none —')}</span></p>
+      </div>`;
+    singleTypeChanged();
+  } catch (e) { card.innerHTML = `<p class="text-xs text-rose-300"><i class="fas fa-circle-xmark mr-1"></i>${esc(e.message)}</p>`; }
+}
+function singleTypeChanged(){
+  const tpl = emailTemplateFor(document.getElementById('emSingleType').value);
+  document.getElementById('emSingleSubject').value = tpl[0] || '';
+  document.getElementById('emSingleBody').value = tpl[1] || '';
+}
+async function sendSingleEmail(){
+  const paycode = document.getElementById('emSinglePaycode').value;
+  if (!paycode) { showToast('Single Email', 'Pehle employee select karo.'); return; }
+  const btn = document.getElementById('emSingleSendBtn'); btn.disabled = true;
+  const box = document.getElementById('emSingleStatus');
+  box.innerHTML = '<p class="text-[11px] text-slate-400">Sending…</p>';
+  try {
+    const r = await emailApi('/email/send-single', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+      paycode,
+      eventType: document.getElementById('emSingleType').value,
+      subject: document.getElementById('emSingleSubject').value.trim(),
+      body: document.getElementById('emSingleBody').value,
+      resend: document.getElementById('emSingleResend').checked
+    }) });
+    const d = await r.json().catch(() => ({}));
+    if (r.ok && d.success) {
+      box.innerHTML = `<div class="rounded-xl bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 text-[11px] text-emerald-200 font-semibold"><i class="fas fa-circle-check mr-1"></i>Sent ✓ → ${esc(d.email)} (${esc(d.emailSource)}) ${d.messageId ? '• ID: ' + esc(d.messageId) : ''}</div>`;
+      loadEmailLog();
+    } else {
+      box.innerHTML = `<div class="rounded-xl bg-rose-500/10 border border-rose-500/20 px-3 py-2 text-[11px] text-rose-200 font-semibold"><i class="fas fa-circle-xmark mr-1"></i>${esc(d.message || 'Send failed')}</div>`;
+    }
+  } catch (e) {
+    box.innerHTML = `<div class="rounded-xl bg-rose-500/10 border border-rose-500/20 px-3 py-2 text-[11px] text-rose-200 font-semibold"><i class="fas fa-circle-xmark mr-1"></i>${esc(e.message)}</div>`;
+  } finally { btn.disabled = false; }
+}
+async function saveEmailConfig(){
+  // Sirf Templates tab ka data — provider/secrets ko chhuta bhi nahi
+  // (provider sirf POST /api/email/provider se badalta hai).
+  const btn2 = document.getElementById('emTplSaveBtn'); if (btn2) btn2.disabled = true;
+  try {
+    const r = await emailApi('/email/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+      sendername: document.getElementById('emSenderName').value.trim(),
+      senderemail: document.getElementById('emSenderEmail').value.trim(),
+      birthdaysubject: document.getElementById('emBdaySubject').value,
+      birthdaybody: document.getElementById('emBdayBody').value,
+      workanniversarysubject: document.getElementById('emWasSubject').value,
+      workanniversarybody: document.getElementById('emWasBody').value,
+      marriagesubject: document.getElementById('emMarSubject').value,
+      marriagebody: document.getElementById('emMarBody').value,
+      customsubject: document.getElementById('emCustomSubject').value,
+      custombody: document.getElementById('emCustomBody').value,
+      birthdayenabled: document.getElementById('emBdayEnabled').checked,
+      workanniversaryenabled: document.getElementById('emWasEnabled').checked,
+      marriageenabled: document.getElementById('emMarEnabled').checked
+    }) });
+    const data = await r.json().catch(() => ({}));
+    showToast('Email', r.ok ? 'Configuration + templates saved ✓' : (data.message || 'Save failed'));
+    if (r.ok) loadEmailSection();
+  } finally { if (btn2) btn2.disabled = false; }
+}
+/* Temporary alias: koi purana cached bundle ab bhi saveEmailConfig() ko
+   Provider-button id (emSaveBtn) se dhoondhe to crash na ho. Alias seedha
+   Templates wale handler ko forward karta hai. */
+function saveEmailProviderLegacyAlias(){ return saveEmailConfig(); }
+async function sendTestEmail(){
+  const to = document.getElementById('emTestTo').value.trim();
+  if (!to) { showToast('Email', 'Pehle test email address daalo.'); return; }
+  const btn = document.getElementById('emTestBtn'); btn.disabled = true;
+  const box = document.getElementById('emTestStatus');
+  box.innerHTML = '<p class="text-[11px] text-slate-400">Sending…</p>';
+  try {
+    const r = await emailApi('/email/test', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ to }) });
+    const d = await r.json().catch(() => ({}));
+    if (r.ok && d.success) {
+      box.innerHTML = `<div class="rounded-xl bg-emerald-500/10 border border-emerald-500/20 px-3 py-2 text-[11px] text-emerald-200 font-semibold"><i class="fas fa-circle-check mr-1"></i>Test email sent ✓ ${d.messageId ? '• Provider ID: ' + esc(d.messageId) : ''} — inbox check karo.</div>`;
+      loadEmailLog();
+    } else {
+      box.innerHTML = `<div class="rounded-xl bg-rose-500/10 border border-rose-500/20 px-3 py-2 text-[11px] text-rose-200 font-semibold"><i class="fas fa-circle-xmark mr-1"></i>${esc(d.message || 'Test email failed')}</div>`;
+    }
+  } catch (e) {
+    box.innerHTML = `<div class="rounded-xl bg-rose-500/10 border border-rose-500/20 px-3 py-2 text-[11px] text-rose-200 font-semibold"><i class="fas fa-circle-xmark mr-1"></i>${esc(e.message)}</div>`;
+  } finally { btn.disabled = false; }
+}
+/* ---- BULK EMAIL: preview first (NO send), then explicit confirmed send ---- */
+function bulkTypeChanged(){
+  const type = document.getElementById('emBulkType').value;
+  const tpl = emailTemplateFor(type);
+  document.getElementById('emBulkSubject').value = tpl[0] || '';
+  document.getElementById('emBulkBody').value = tpl[1] || '';
+  document.getElementById('emBulkDate').disabled = type === 'Custom';
+  clearBulkPreview();
+}
+function clearBulkPreview(){
+  emailBulkPreviewData = null;
+  const wrap = document.getElementById('emBulkPreviewWrap'); if (wrap) wrap.classList.add('hidden');
+  const body = document.getElementById('emBulkPreviewBody'); if (body) body.innerHTML = '';
+  const send = document.getElementById('emSendBtn'); if (send) send.disabled = true;
+  const sum = document.getElementById('emBulkSummary'); if (sum) sum.innerHTML = '';
+}
+function bulkFilters(){
+  return {
+    eventType: document.getElementById('emBulkType').value,
+    companycode: document.getElementById('emFilterCompany').value === 'ALL' ? '' : document.getElementById('emFilterCompany').value,
+    departmentcode: document.getElementById('emFilterDept').value,
+    date: document.getElementById('emBulkDate').value || emailDateISO(new Date()),
+    subject: document.getElementById('emBulkSubject').value.trim(),
+    body: document.getElementById('emBulkBody').value,
+    resend: document.getElementById('emBulkResend').checked
+  };
+}
+async function previewBulkRecipients(){
+  const f = bulkFilters();
+  const btn = document.getElementById('emPreviewBtn'); btn.disabled = true;
+  try {
+    const q = new URLSearchParams({ eventType: f.eventType, date: f.date, subject: f.subject, body: f.body });
+    if (f.companycode) q.set('companycode', f.companycode);
+    if (f.departmentcode) q.set('departmentcode', f.departmentcode);
+    const r = await emailApi('/email/preview?' + q.toString());
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.message || 'Preview failed');
+    emailBulkPreviewData = d;
+    document.getElementById('emBulkSummary').innerHTML =
+      `<span class="text-white font-bold">Total Recipients: ${d.total}</span> • Valid emails: ${d.validEmails} • Missing: ${d.missingEmails} • Already sent: ${d.alreadySent} • Will send: <span class="text-amber-300 font-bold">${d.willSend}</span> • ` +
+      (d.providerReady ? '<span class="text-emerald-300 font-bold">Brevo ready ✓</span>' : '<span class="text-rose-300 font-bold">Email provider is not configured</span>');
+    document.getElementById('emBulkPreviewBody').innerHTML = (d.rows || []).map(x => `<tr class="table-row">
+      <td class="py-2 px-3 text-white font-semibold">${esc(x.employeename || '—')}</td>
+      <td class="py-2 px-3 mono text-indigo-300">${esc(x.paycode)}</td>
+      <td class="py-2 px-3 text-slate-300">${esc(x.companycode || '—')}</td>
+      <td class="py-2 px-3 text-slate-300">${esc(x.departmentcode || '—')}</td>
+      <td class="py-2 px-3 mono text-slate-400">${esc(x.email || '—')}</td>
+      <td class="py-2 px-3 text-violet-300">${esc(x.mailType || f.eventType)}</td>
+      <td class="py-2 px-3 text-[10px] ${x.emailSource === 'Missing' ? 'text-rose-300' : 'text-slate-300'}">${esc(x.emailSource || '—')}</td>
+      <td class="py-2 px-3">${x.alreadySent ? '<span class="text-amber-300 font-bold">Yes</span>' : '<span class="text-slate-500">No</span>'}</td>
+    </tr>`).join('') || '<tr><td colspan="8" class="py-6 text-center text-slate-500 text-xs">Is filter + date ke liye koi recipient nahi mila.</td></tr>';
+    document.getElementById('emBulkPreviewWrap').classList.remove('hidden');
+    document.getElementById('emSendBtn').disabled = d.total === 0;
+  } catch (e) { showToast('Bulk Email', e.message); }
+  finally { btn.disabled = false; }
+}
+async function sendBulkEmail(){
+  const d = emailBulkPreviewData;
+  if (!d) { showToast('Bulk Email', 'Pehle "Preview Recipients" chalao — bina preview send nahi hota.'); return; }
+  if (!d.providerReady) { showToast('Bulk Email', 'Email provider is not configured.'); return; }
+  const f = bulkFilters();
+  const scope = 'Company: ' + (f.companycode || 'ALL') + ' • Department: ' + (f.departmentcode || 'ALL');
+  if (!confirm('Send ' + d.eventType + ' emails?\n' + scope + '\nDate: ' + f.date + '\nWill send: ' + d.willSend + ' (already-sent skip)\n\nConfirm?')) return;
+  const btn = document.getElementById('emSendBtn'); btn.disabled = true;
+  try {
+    const r = await emailApi('/email/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(f) });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) { showToast('Bulk Email', data.message || 'Send failed'); return; }
+    if (data.skippedReason) { showToast('Bulk Email', data.skippedReason); return; }
+    showToast('Bulk Email Result', `Sent: ${data.sent || 0} • Already sent (skipped): ${data.alreadySent || 0} • No email: ${data.noEmail || 0} • Failed: ${data.failed || 0}`);
+    clearBulkPreview();
+    loadEmailLog();
+  } catch (e) { showToast('Bulk Email', e.message); }
+  finally { btn.disabled = false; }
+}
+async function loadEmailLog(){
+  const body = document.getElementById('emLogBody'); if (!body) return;
+  try {
+    const r = await emailApi('/email/log?limit=150');
+    if (!r.ok) throw new Error('Log unavailable');
+    const d = await r.json();
+    const rows = d.rows || [];
+    document.getElementById('emLogCount').textContent = rows.length;
+    body.innerHTML = rows.length ? rows.map(x => `<tr class="table-row">
+      <td class="py-2 px-3 text-slate-400">${esc(x.eventdate || '')}</td>
+      <td class="py-2 px-3 text-white font-semibold">${esc(x.employeename || '—')}</td>
+      <td class="py-2 px-3 mono text-indigo-300">${esc(x.paycode || '—')}</td>
+      <td class="py-2 px-3 text-slate-300">${esc(x.companycode || '—')}</td>
+      <td class="py-2 px-3 text-slate-300">${esc(x.departmentcode || '—')}</td>
+      <td class="py-2 px-3 text-slate-300">${esc(x.eventtype || '')}</td>
+      <td class="py-2 px-3 mono text-slate-400">${esc(x.recipientemail || '—')}</td>
+      <td class="py-2 px-3">${x.status === 'Sent' ? '<span class="text-emerald-300 font-bold">Sent</span>' : x.status === 'Failed' ? '<span class="text-rose-300 font-bold">Failed</span>' : x.status === 'Invalid Email' ? '<span class="text-amber-300 font-bold">Invalid Email</span>' : `<span class="text-slate-300 font-bold">${esc(x.status)}</span>`}</td>
+      <td class="py-2 px-3 text-slate-400 mono text-[10px]">${esc(x.sentat || '')}</td>
+      <td class="py-2 px-3 text-rose-300/80 text-[10px] max-w-[180px] truncate" title="${esc(x.errormessage || '')}">${esc(x.errormessage || '—')}</td>
+    </tr>`).join('') : '<tr><td colspan="10" class="py-6 text-center text-slate-500 text-xs">Koi email log nahi — abhi tak koi greeting send nahi hui.</td></tr>';
+  } catch (_) { body.innerHTML = '<tr><td colspan="10" class="py-6 text-center text-slate-500 text-xs">Email log load nahi hua.</td></tr>'; }
+}
+async function handleEmailExcel(ev){
+  const file = ev.target.files && ev.target.files[0]; if (!file) return;
+  try {
+    await window.ensureXLSX();
+    const wb = XLSX.read(new Uint8Array(await file.arrayBuffer()), { type: 'array', cellDates: true });
+    const grid = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, raw: true, defval: '' });
+    if (!grid.length) { showToast('Import', 'File khali hai.'); return; }
+    const head = grid[0].map(h => String(h || '').trim().toLowerCase());
+    const idx = { company: head.indexOf('companycode'), pay: head.indexOf('paycode'), dept: head.indexOf('departmentcode'), name: head.indexOf('employeename'), email: head.indexOf('email') };
+    if (idx.pay === -1 || idx.email === -1) { showToast('Import', 'Paycode aur Email columns required hain.'); return; }
+    const rows = [];
+    for (let i = 1; i < grid.length; i++) {
+      const r = grid[i]; if (!r || (!r[idx.pay] && !r[idx.email])) continue;
+      rows.push({ companycode: idx.company > -1 ? String(r[idx.company] || '').trim() : '', paycode: String(r[idx.pay] || '').trim(), departmentcode: idx.dept > -1 ? String(r[idx.dept] || '').trim() : '', employeename: idx.name > -1 ? String(r[idx.name] || '').trim() : '', email: String(r[idx.email] || '').trim() });
+    }
+    if (!rows.length) { showToast('Import', 'Koi data row nahi mili.'); return; }
+    const res = await emailApi('/email/import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rows }) });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) { showToast('Import', d.message || 'Import failed'); return; }
+    const total = d.total || rows.length;
+    document.getElementById('emImportSummary').innerHTML =
+      emailStatusCard('Total Rows', String(total), 'text-white') +
+      emailStatusCard('Imported (new)', String(d.inserted || 0), 'text-emerald-300') +
+      emailStatusCard('Updated (same Paycode)', String(d.updated || 0), 'text-sky-300') +
+      emailStatusCard('Invalid / Skipped', String(d.invalid || 0) + (d.notFound ? ` • ${d.notFound} paycode SQL me nahi` : ''), 'text-rose-300');
+    showToast('Import Result', `Total: ${total} • New: ${d.inserted || 0} • Updated: ${d.updated || 0} • Invalid: ${d.invalid || 0}${d.notFound ? ' • Paycode not in SQL: ' + d.notFound : ''}`);
+    loadEmailSection();
+  } catch (e) { showToast('Import', e.message || 'File read failed'); }
+  finally { ev.target.value = ''; }
+}
+function downloadEmailTemplate(){
+  // Sirf headers — koi dummy/fake employee ya email data nahi (task rule).
+  downloadCSV('employee-email-import-template', [['CompanyCode', 'Paycode', 'DepartmentCode', 'EmployeeName', 'Email', 'IsMarried']]);
+}
+/* ================= /EMAIL CONFIGURATION ================= */
+
 function downloadMarriageTemplate(){
   const rows = [['Paycode','EmployeeName','MarriageDate']];
   employees.slice(0, 3).forEach((e, i) => rows.push([e.paycode, e.empname, '15-0' + (i + 2) + '-2015']));
@@ -3277,11 +4492,127 @@ function decideLeave(id, decision){
 }
 
 /* =========================================================================
+   Late Employees Hover Detail
+   ========================================================================= */
+let lateHoverTimeout = null;
+let lateHoverEl = null;
+
+function showLateEmployeesHover(event){
+  clearTimeout(lateHoverTimeout);
+  const card = event.currentTarget;
+  
+  // Create hover detail element if not exists
+  if (!lateHoverEl) {
+    lateHoverEl = document.createElement('div');
+    lateHoverEl.id = 'lateEmployeesHover';
+    lateHoverEl.className = 'fixed z-50 pointer-events-none';
+    document.body.appendChild(lateHoverEl);
+  }
+  
+  lateHoverTimeout = setTimeout(async () => {
+    const rect = card.getBoundingClientRect();
+    lateHoverEl.style.left = rect.left + 'px';
+    lateHoverEl.style.top = (rect.bottom + 8) + 'px';
+    
+    lateHoverEl.innerHTML = `
+      <div class="p-3 rounded-xl bg-slate-900/95 border border-indigo-500/30 shadow-xl min-w-[320px] max-w-[480px]">
+        <div class="flex items-center gap-2 mb-2">
+          <i class="fas fa-spinner fa-spin text-indigo-400"></i>
+          <span class="text-xs font-bold text-indigo-300">Loading late details…</span>
+        </div>
+      </div>`;
+    lateHoverEl.style.display = 'block';
+    
+    try {
+      const fallbackDate = todayISO();
+      const fromDate = hrSummary?.fromDate || fallbackDate;
+      const toDate = hrSummary?.toDate || fallbackDate;
+      
+      const response = await apiFetch('/hr/late-employees?fromDate=' + encodeURIComponent(fromDate) + '&toDate=' + encodeURIComponent(toDate));
+      if (!response.ok) throw new Error('Failed to load');
+      const data = await response.json();
+      
+      const lateRows = data.employees || [];
+      const rangeLabel = fromDate === toDate ? pretty(fromDate) : `${pretty(fromDate)} to ${pretty(toDate)}`;
+      
+      if (lateRows.length === 0) {
+        lateHoverEl.innerHTML = `
+          <div class="p-3 rounded-xl bg-slate-900/95 border border-indigo-500/30 shadow-xl min-w-[280px]">
+            <div class="text-xs font-bold text-indigo-300 mb-1">Late Employees — ${esc(rangeLabel)}</div>
+            <div class="text-[11px] text-slate-400">No late attendance records</div>
+          </div>`;
+        return;
+      }
+      
+      // Group by employee
+      const byEmp = new Map();
+      lateRows.forEach(row => {
+        const key = row.paycode;
+        if (!byEmp.has(key)) byEmp.set(key, { paycode: row.paycode, empname: row.empname, departmentcode: row.departmentcode, designation: row.designation, cat: row.cat, companycode: row.companycode, dates: [] });
+        byEmp.get(key).dates.push({ date: row.date, inTime: row.inTime, outTime: row.outTime, shift: row.shift, latearrival: row.latearrival, graceUsed: row.graceUsed });
+      });
+      
+      lateHoverEl.innerHTML = `
+        <div class="p-3 rounded-xl bg-slate-900/95 border border-indigo-500/30 shadow-xl min-w-[320px] max-w-[480px] max-h-[400px] overflow-y-auto">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold text-indigo-300">Late Employees — ${esc(rangeLabel)}</span>
+            <span class="px-2 py-0.5 rounded bg-indigo-500/20 border border-indigo-500/30 text-indigo-200 text-[10px] font-bold">${data.late}</span>
+          </div>
+          <div class="space-y-2">${Array.from(byEmp.values()).map(emp => `
+            <div class="bg-white/5 rounded-lg p-2 border border-white/5">
+              <div class="flex items-center justify-between gap-2 mb-1">
+                <span class="text-white font-semibold text-xs">${esc(emp.empname)}</span>
+                <span class="mono text-indigo-300 text-[10px]">${esc(emp.paycode)}</span>
+              </div>
+              <div class="text-[10px] text-slate-400 flex flex-wrap gap-2 mb-1">
+                <span>${esc(deptLabel(emp.departmentcode || ''))}</span>
+                <span>${esc(emp.designation || '—')}</span>
+                <span class="px-1.5 py-0.5 rounded bg-amber-500/20 border border-amber-500/30 text-amber-300">${esc(emp.cat || '—')}</span>
+              </div>
+              <div class="space-y-1 mt-1">${emp.dates.map(d => {
+                const shiftStart = getShiftStartTime(d.shift, emp.companycode);
+                const graceLabel = d.graceUsed === '5min' ? '5min grace' : 
+                                  d.graceUsed === '30min' ? '30min staff grace' : 
+                                  d.graceUsed === '1hr' ? '1hr staff grace' : 
+                                  d.graceUsed === '2hr' ? '2hr staff grace' : 'Late';
+                return `
+                  <div class="flex items-center justify-between text-[10px] p-1.5 rounded bg-white/5">
+                    <span class="text-slate-300">${pretty(d.date)}</span>
+                    <span class="text-emerald-300 mono">${esc(d.inTime || '—')}</span>
+                    <span class="text-indigo-300">${esc(shiftStart || '—')}</span>
+                    <span class="px-1.5 py-0.5 rounded text-[9px] ${d.graceUsed ? 'bg-emerald-500/20 border border-emerald-500/30 text-emerald-300' : 'bg-rose-500/20 border border-rose-500/30 text-rose-300'}">${esc(graceLabel)}</span>
+                    ${d.latearrival ? `<span class="text-rose-300 mono">+${d.latearrival}m</span>` : ''}
+                  </div>`;
+              }).join('')}</div>
+            </div>
+          `).join('')}</div>
+        </div>`;
+    } catch (err) {
+      lateHoverEl.innerHTML = `
+        <div class="p-3 rounded-xl bg-rose-900/95 border border-rose-500/30 shadow-xl min-w-[280px]">
+          <div class="text-xs font-bold text-rose-300">Unable to load late details</div>
+        </div>`;
+    }
+  }, 200); // Small delay to avoid flicker
+}
+
+function hideLateEmployeesHover(){
+  clearTimeout(lateHoverTimeout);
+  if (lateHoverEl) lateHoverEl.style.display = 'none';
+}
+
+function getShiftStartTime(shiftCode, companyCode){
+  if (!shiftCode) return null;
+  // Use shift master cache if available, otherwise return shift code
+  return shiftCode;
+}
+
+/* =========================================================================
    15. AUDIT MODAL
    ========================================================================= */
 async function openLateEmployeesAudit(){
-  // The Executive Overview is daily today by default.  Use the exact range
-  // returned by /hr/summary, so the card and its audit list share one context.
+  // Use the dedicated /hr/late-employees endpoint which returns only late employees
+  // with full details, instead of downloading all attendance and filtering in browser.
   const fallbackDate = todayISO();
   const fromDate = hrSummary?.fromDate || fallbackDate;
   const toDate = hrSummary?.toDate || fallbackDate;
@@ -3291,33 +4622,20 @@ async function openLateEmployeesAudit(){
   modal.classList.remove('hidden');
 
   try {
-    const [summaryResponse, attendanceResponse] = await Promise.all([
-      apiFetch('/hr/summary?fromDate=' + encodeURIComponent(fromDate) + '&toDate=' + encodeURIComponent(toDate)),
-      apiFetch('/attendance?fromDate=' + encodeURIComponent(fromDate) + '&toDate=' + encodeURIComponent(toDate))
-    ]);
-    if (!summaryResponse.ok || !attendanceResponse.ok) throw new Error('Late attendance records are unavailable.');
-    const summary = await summaryResponse.json();
-    const sourceRows = await attendanceResponse.json();
-    hrSummary = summary;
+    // Single API call - returns only late employees with full details
+    const response = await apiFetch('/hr/late-employees?fromDate=' + encodeURIComponent(fromDate) + '&toDate=' + encodeURIComponent(toDate));
+    if (!response.ok) throw new Error('Late attendance records are unavailable.');
+    const data = await response.json();
+    
+    // Update dashboard late count
+    hrSummary = hrSummary || {};
+    hrSummary.latetoday = data.late;
     const metric = document.getElementById('hrLateToday');
-    if (metric) metric.textContent = Number(summary.latetoday ?? summary.late ?? 0);
+    if (metric) metric.textContent = data.late;
 
-    // This mirrors aggregateAttendance: Week Off rows are excluded and one
-    // employee is counted once when any row in the selected range is late.
-    const lateByPaycode = new Map();
-    (Array.isArray(sourceRows) ? sourceRows : []).map(normalizeAttendance).forEach(row => {
-      if (!row.punchdate || row.punchdate < fromDate || row.punchdate > toDate) return;
-      if (classifyFrontRow(row) === 'Week Off' || !isLateRow(row)) return;
-      const key = paykey(row.paycode);
-      if (key && !lateByPaycode.has(key)) lateByPaycode.set(key, row);
-    });
-    const lateRows = [...lateByPaycode.values()].sort((a, b) => {
-      const an = directoryEmployees().find(e => paykey(e.paycode) === paykey(a.paycode))?.empname || '';
-      const bn = directoryEmployees().find(e => paykey(e.paycode) === paykey(b.paycode))?.empname || '';
-      return an.localeCompare(bn);
-    });
+    const lateRows = data.employees || [];
     const listedCount = lateRows.length;
-    const dashboardCount = Number(summary.latetoday ?? summary.late ?? 0);
+    const dashboardCount = data.late;
     const rangeLabel = fromDate === toDate ? pretty(fromDate) : `${pretty(fromDate)} to ${pretty(toDate)}`;
 
     content.innerHTML = `
@@ -3331,9 +4649,7 @@ async function openLateEmployeesAudit(){
             <th class="py-3 px-3">ID</th><th class="py-3 px-3">Name</th><th class="py-3 px-3">Department</th><th class="py-3 px-3">Designation</th><th class="py-3 px-3">Date</th><th class="py-3 px-3">In</th><th class="py-3 px-3">Out</th><th class="py-3 px-3">Status</th><th class="py-3 px-3 text-center">Audit</th>
           </tr></thead>
           <tbody class="divide-y divide-white/5">${lateRows.length ? lateRows.map(row => {
-            const employee = directoryEmployees().find(e => paykey(e.paycode) === paykey(row.paycode)) || {};
-            const paycode = employee.paycode || row.paycode;
-            return `<tr class="table-row"><td class="py-2.5 px-3 mono text-indigo-300">${esc(paycode)}</td><td class="py-2.5 px-3 text-white font-semibold">${esc(employee.empname || '—')}</td><td class="py-2.5 px-3 text-slate-300">${esc(deptLabel(employee.departmentcode || ''))}</td><td class="py-2.5 px-3 text-slate-300">${esc(employee.designation || '—')}</td><td class="py-2.5 px-3 text-slate-300">${pretty(row.punchdate)}</td><td class="py-2.5 px-3 text-emerald-300 mono">${esc(row.intime || '—')}</td><td class="py-2.5 px-3 text-rose-300 mono">${esc(row.outtime || '—')}</td><td class="py-2.5 px-3"><div class="flex items-center gap-1.5">${statusBadge('Late')}<span class="text-[10px] text-slate-400">${esc(row.status || '—')}</span></div></td><td class="py-2.5 px-3 text-center"><button onclick="openAudit('${esc(paycode)}')" class="px-2.5 py-1 rounded-lg bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 hover:bg-indigo-500/25 text-[11px] font-bold transition">View</button></td></tr>`;
+            return `<tr class="table-row"><td class="py-2.5 px-3 mono text-indigo-300">${esc(row.paycode)}</td><td class="py-2.5 px-3 text-white font-semibold">${esc(row.empname || '—')}</td><td class="py-2.5 px-3 text-slate-300">${esc(deptLabel(row.departmentcode || ''))}</td><td class="py-2.5 px-3 text-slate-300">${esc(row.designation || '—')}</td><td class="py-2.5 px-3 text-slate-300">${pretty(row.date)}</td><td class="py-2.5 px-3 text-emerald-300 mono">${esc(row.inTime || '—')}</td><td class="py-2.5 px-3 text-rose-300 mono">${esc(row.outTime || '—')}</td><td class="py-2.5 px-3"><div class="flex items-center gap-1.5">${statusBadge('Late')}<span class="text-[10px] text-slate-400">${esc(row.status || '—')}</span></div></td><td class="py-2.5 px-3 text-center"><button onclick="openAudit('${esc(row.paycode)}')" class="px-2.5 py-1 rounded-lg bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 hover:bg-indigo-500/25 text-[11px] font-bold transition">View</button></td></tr>`;
           }).join('') : '<tr><td colspan="9" class="py-8 text-center text-slate-400">No late attendance records found for this period.</td></tr>'}</tbody>
         </table>
       </div>
@@ -3346,50 +4662,159 @@ async function openLateEmployeesAudit(){
 function openAudit(paycode){
   const e = directoryEmployees().find(x => paykey(x.paycode) === paykey(paycode)); if (!e) return;
   const now = new Date();
-  const st = monthStats(e.paycode, now.getFullYear(), now.getMonth());
-  const mar = marriageAnniversaries.find(m => m.paycode === e.paycode);
-  const rows = attRows(e.paycode).slice(0, 10).map(r => {
-    const d = parseISO(r.punchdate);
-    return `<tr class="table-row"><td class="py-2 px-3 mono text-slate-300">${pad(d.getDate())}-${MONTHS[d.getMonth()]}</td>
-      <td class="py-2 px-3 text-slate-400">${DAYS[d.getDay()].substring(0,3)}</td>
-      <td class="py-2 px-3 text-emerald-300 mono">${r.intime || '--'}</td>
-      <td class="py-2 px-3 text-rose-300 mono">${r.outtime || '--'}</td>
-      <td class="py-2 px-3 text-white">${r.hrs || '--'}</td>
-      <td class="py-2 px-3">${statusBadge(r.status)}</td></tr>`;
-  }).join('');
+  const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const modal = document.getElementById('empModal');
+  const content = document.getElementById('modalContent');
+  content.innerHTML = `<div class="p-5 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-sm text-indigo-200"><i class="fas fa-spinner fa-spin mr-2"></i>Loading attendance details for ${month}...</div>`;
+  modal.classList.remove('hidden');
 
-  document.getElementById('modalContent').innerHTML = `
-    <div class="flex items-center gap-4 p-4 rounded-2xl bg-white/5 border border-white/5">
-      <div class="w-14 h-14 rounded-2xl card-gradient-1 flex items-center justify-center font-extrabold text-white overflow-hidden">${(e.emphoto && String(e.emphoto).startsWith('data:')) ? '<img src="'+e.emphoto+'" class="w-full h-full object-cover">' : initials(e.empname)}</div>
-      <div>
-        <p class="font-extrabold text-white">${esc(e.empname)}</p>
-        <p class="text-xs text-indigo-400 font-semibold">${esc(e.designation)} • ${esc(e.departmentcode)}</p>
-        <p class="text-[10px] text-slate-400 mono mt-0.5">Paycode ${esc(e.paycode)} | Card ${esc(e.presentcardno)} | ${esc(e.companycode)}</p>
-      </div>
-    </div>
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-      <div class="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-center"><p class="text-xl font-extrabold text-emerald-400">${st.present}</p><p class="text-[10px] text-slate-400 uppercase">Present</p></div>
-      <div class="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-center"><p class="text-xl font-extrabold text-rose-400">${st.absent}</p><p class="text-[10px] text-slate-400 uppercase">Absent</p></div>
-      <div class="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-center"><p class="text-xl font-extrabold text-amber-400">${st.miss}</p><p class="text-[10px] text-slate-400 uppercase">Miss Punch</p></div>
-      <div class="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-center"><p class="text-xl font-extrabold text-indigo-400">${st.hrs}</p><p class="text-[10px] text-slate-400 uppercase">Hours</p></div>
-    </div>
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-      <div class="p-3 rounded-xl bg-white/5 border border-white/5"><p class="text-[10px] uppercase font-bold text-slate-400">Date of Birth</p><p class="text-xs font-bold text-white mt-1">${pretty(e.dateofbirth)}</p><p class="text-[10px] text-pink-300">Age ${ageFrom(e.dateofbirth)}</p></div>
-      <div class="p-3 rounded-xl bg-white/5 border border-white/5"><p class="text-[10px] uppercase font-bold text-slate-400">Date of Joining</p><p class="text-xs font-bold text-white mt-1">${pretty(e.dateofjoin)}</p><p class="text-[10px] text-amber-300">${yearsCompleted(e.dateofjoin)} years</p></div>
-      <div class="p-3 rounded-xl bg-white/5 border border-white/5"><p class="text-[10px] uppercase font-bold text-slate-400">Marriage Anniversary</p><p class="text-xs font-bold text-rose-300 mt-1">${mar ? pretty(mar.anniversarydate) : 'Not on record'}</p><p class="text-[10px] text-slate-400">${mar ? yearsCompleted(mar.anniversarydate) + ' yrs' : 'HR import required'}</p></div>
-    </div>
-    <div class="p-4 rounded-2xl bg-white/5 border border-white/5">
-      <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Recent Punch Log</h4>
-      <div class="overflow-x-auto">
-        <table class="w-full text-left text-xs">
-          <thead><tr class="border-b border-white/10 text-slate-400 font-semibold uppercase">
-            <th class="py-2 px-3">Date</th><th class="py-2 px-3">Day</th><th class="py-2 px-3">In</th><th class="py-2 px-3">Out</th><th class="py-2 px-3">Hrs</th><th class="py-2 px-3">Status</th>
-          </tr></thead>
-          <tbody class="divide-y divide-white/5">${rows}</tbody>
-        </table>
-      </div>
-    </div>`;
-  document.getElementById('empModal').classList.remove('hidden');
+  // Use the HR audit endpoint which returns complete month attendance
+  apiFetch('/hr/audit/' + encodeURIComponent(paycode) + '?month=' + month)
+    .then(r => r.ok ? r.json() : Promise.reject('API error'))
+    .then(data => {
+      if (!data) throw new Error('No data');
+      const stats = data.stats || {};
+      const attendance = Array.isArray(data.attendance) ? data.attendance : [];
+      const mar = marriageAnniversaries.find(m => m.paycode === e.paycode);
+      
+      // Format attendance rows for display
+      const rows = attendance.map(r => {
+        const d = parseISO(r.date || r.dateoffice || r.punchdate);
+        const intime = r.inTime || r.intime || r.in1 || '--';
+        const outtime = r.outTime || r.outtime || r.out1 || '--';
+        const hrs = r.hoursworked || r.hrs || '--';
+        const status = r.statusLabel || r.computedStatus || r.status || 'A';
+        return `<tr class="table-row"><td class="py-2 px-3 mono text-slate-300">${pad(d.getDate())}-${MONTHS[d.getMonth()]}</td>
+          <td class="py-2 px-3 text-slate-400">${DAYS[d.getDay()].substring(0,3)}</td>
+          <td class="py-2 px-3 text-emerald-300 mono">${intime}</td>
+          <td class="py-2 px-3 text-rose-300 mono">${outtime}</td>
+          <td class="py-2 px-3 text-white">${hrs}</td>
+          <td class="py-2 px-3">${statusBadge(status)}</td></tr>`;
+      }).join('');
+      
+      document.getElementById('modalContent').innerHTML = `
+        <div class="flex items-center gap-4 p-4 rounded-2xl bg-white/5 border border-white/5">
+          <div class="w-14 h-14 rounded-2xl card-gradient-1 flex items-center justify-center font-extrabold text-white overflow-hidden">${(e.emphoto && String(e.emphoto).startsWith('data:')) ? '<img src="'+e.emphoto+'" class="w-full h-full object-cover">' : initials(e.empname)}</div>
+          <div>
+            <p class="font-extrabold text-white">${esc(e.empname)}</p>
+            <p class="text-xs text-indigo-400 font-semibold">${esc(e.designation)} • ${esc(e.departmentcode)}</p>
+            <p class="text-[10px] text-slate-400 mono mt-0.5">Paycode ${esc(e.paycode)} | Card ${esc(e.presentcardno)} | ${esc(e.companycode)}</p>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+          <div class="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-center"><p class="text-xl font-extrabold text-emerald-400">${Number(stats.present || 0)}</p><p class="text-[10px] text-slate-400 uppercase">Present</p></div>
+          <div class="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-center"><p class="text-xl font-extrabold text-rose-400">${Number(stats.absent || 0)}</p><p class="text-[10px] text-slate-400 uppercase">Absent</p></div>
+          <div class="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-center"><p class="text-xl font-extrabold text-amber-400">${Number(stats.miss || 0)}</p><p class="text-[10px] text-slate-400 uppercase">Miss Punch</p></div>
+          <div class="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-center"><p class="text-xl font-extrabold text-indigo-400">${Number(stats.late || 0)}</p><p class="text-[10px] text-slate-400 uppercase">Late Coming</p></div>
+          <div class="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-center"><p class="text-xl font-extrabold text-indigo-400">${Number(stats.hours || 0)}</p><p class="text-[10px] text-slate-400 uppercase">Hours</p></div>
+        </div>
+        
+        <!-- Late Details & Grace Remaining Section -->
+        ${(data.lateDetails && data.lateDetails.length > 0) || (data.graceRemaining && (data.graceRemaining.grace30min > 0 || data.graceRemaining.grace1hr > 0 || data.graceRemaining.grace2hr > 0)) ? `
+        <div class="p-4 rounded-2xl bg-white/5 border border-white/5 mt-4">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-2"><i class="fas fa-clock text-amber-400"></i>Late Arrival Details (Monthly Grace Consumption)</h4>
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div>
+              <p class="text-[10px] font-bold text-amber-300 mb-2">Late Occurrences</p>
+              <div class="max-h-64 overflow-y-auto space-y-1">
+                ${data.lateDetails && data.lateDetails.length > 0 ? data.lateDetails.map(d => {
+                  const graceLabel = d.isFinalLate
+                    ? (d.graceUsed === null ? 'No grace — FINAL LATE' : '')
+                    : (d.graceUsed === '30min' ? 'Covered by 30-min grace' :
+                       d.graceUsed === '1hr' ? 'Covered by 1-hr grace' :
+                       d.graceUsed === '2hr' ? 'Covered by 2-hr grace' : 'Grace applied');
+                  const rowClass = d.isFinalLate ? 'bg-rose-500/10 border-rose-500/20' : 'bg-emerald-500/10 border-emerald-500/20';
+                  const graceClass = d.isFinalLate ? 'text-rose-300' : 'text-emerald-300';
+                  return `
+                  <div class="flex items-center justify-between text-[10px] p-1.5 rounded ${rowClass} border">
+                    <span class="text-slate-300">${pretty(d.date)}</span>
+                    <span class="text-emerald-300 mono">${esc(d.inTime || '—')}</span>
+                    <span class="${graceClass} font-semibold">${esc(graceLabel)}</span>
+                    ${d.lateMinutes ? `<span class="text-rose-300 mono">+${d.lateMinutes}m late</span>` : ''}
+                  </div>`;
+                }).join('') : '<div class="text-[10px] text-slate-400 p-2">No late occurrences this month</div>'}
+              </div>
+            </div>
+            <div>
+              <p class="text-[10px] font-bold text-amber-300 mb-2">Monthly Staff Grace Used</p>
+              <div class="space-y-2">
+                <div class="flex items-center justify-between p-2 rounded bg-white/5">
+                  <span class="text-slate-300 text-[10px]">30-min grace (2 per month)</span>
+                  <span class="text-white font-bold mono">${2 - Number(data.graceRemaining?.grace30min ?? 0)}/2</span>
+                </div>
+                <div class="flex items-center justify-between p-2 rounded bg-white/5">
+                  <span class="text-slate-300 text-[10px]">1-hr grace (1 per month)</span>
+                  <span class="text-white font-bold mono">${1 - Number(data.graceRemaining?.grace1hr ?? 0)}/1</span>
+                </div>
+                <div class="flex items-center justify-between p-2 rounded bg-white/5">
+                  <span class="text-slate-300 text-[10px]">2-hr grace (1 per month)</span>
+                  <span class="text-white font-bold mono">${1 - Number(data.graceRemaining?.grace2hr ?? 0)}/1</span>
+                </div>
+              </div>
+              <p class="text-[9px] text-slate-500 mt-2">Used/Total. Universal 5-min grace applies to all categories. Staff grace consumed chronologically (smallest first).</p>
+            </div>
+          </div>
+        </div>
+        ` : ''}
+        
+        <div class="p-4 rounded-2xl bg-white/5 border border-white/5 mt-4">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Attendance Details for ${month} (${attendance.length} days)</h4>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead><tr class="border-b border-white/10 text-slate-400 font-semibold uppercase">
+                <th class="py-2 px-3">Date</th><th class="py-2 px-3">Day</th><th class="py-2 px-3">In</th><th class="py-2 px-3">Out</th><th class="py-2 px-3">Hrs</th><th class="py-2 px-3">Status</th>
+              </tr></thead>
+              <tbody class="divide-y divide-white/5">${rows}</tbody>
+            </table>
+          </div>
+        </div>`;
+    })
+    .catch(err => {
+      // Fallback to local data if API fails
+      const st = monthStats(e.paycode, now.getFullYear(), now.getMonth());
+      const mar = marriageAnniversaries.find(m => m.paycode === e.paycode);
+      const rows = st.rows.slice(0, 50).map(r => {
+        const d = parseISO(r.punchdate);
+        return `<tr class="table-row"><td class="py-2 px-3 mono text-slate-300">${pad(d.getDate())}-${MONTHS[d.getMonth()]}</td>
+          <td class="py-2 px-3 text-slate-400">${DAYS[d.getDay()].substring(0,3)}</td>
+          <td class="py-2 px-3 text-emerald-300 mono">${r.intime || '--'}</td>
+          <td class="py-2 px-3 text-rose-300 mono">${r.outtime || '--'}</td>
+          <td class="py-2 px-3 text-white">${r.hrs || '--'}</td>
+          <td class="py-2 px-3">${statusBadge(r.status)}</td></tr>`;
+      }).join('');
+      content.innerHTML = `
+        <div class="flex items-center gap-4 p-4 rounded-2xl bg-white/5 border border-white/5">
+          <div class="w-14 h-14 rounded-2xl card-gradient-1 flex items-center justify-center font-extrabold text-white overflow-hidden">${(e.emphoto && String(e.emphoto).startsWith('data:')) ? '<img src="'+e.emphoto+'" class="w-full h-full object-cover">' : initials(e.empname)}</div>
+          <div>
+            <p class="font-extrabold text-white">${esc(e.empname)}</p>
+            <p class="text-xs text-indigo-400 font-semibold">${esc(e.designation)} • ${esc(e.departmentcode)}</p>
+            <p class="text-[10px] text-slate-400 mono mt-0.5">Paycode ${esc(e.paycode)} | Card ${esc(e.presentcardno)} | ${esc(e.companycode)}</p>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+          <div class="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-center"><p class="text-xl font-extrabold text-emerald-400">${st.present}</p><p class="text-[10px] text-slate-400 uppercase">Present</p></div>
+          <div class="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-center"><p class="text-xl font-extrabold text-rose-400">${st.absent}</p><p class="text-[10px] text-slate-400 uppercase">Absent</p></div>
+          <div class="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-center"><p class="text-xl font-extrabold text-amber-400">${st.miss}</p><p class="text-[10px] text-slate-400 uppercase">Miss Punch</p></div>
+          <div class="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-center"><p class="text-xl font-extrabold text-indigo-400">${st.late}</p><p class="text-[10px] text-slate-400 uppercase">Late Coming</p></div>
+          <div class="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-center"><p class="text-xl font-extrabold text-indigo-400">${st.hrs}</p><p class="text-[10px] text-slate-400 uppercase">Hours</p></div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div class="p-3 rounded-xl bg-white/5 border border-white/5"><p class="text-[10px] uppercase font-bold text-slate-400">Date of Birth</p><p class="text-xs font-bold text-white mt-1">${pretty(e.dateofbirth)}</p><p class="text-[10px] text-pink-300">Age ${ageFrom(e.dateofbirth)}</p></div>
+          <div class="p-3 rounded-xl bg-white/5 border border-white/5"><p class="text-[10px] uppercase font-bold text-slate-400">Date of Joining</p><p class="text-xs font-bold text-white mt-1">${pretty(e.dateofjoin)}</p><p class="text-[10px] text-amber-300">${yearsCompleted(e.dateofjoin)} years</p></div>
+          <div class="p-3 rounded-xl bg-white/5 border border-white/5"><p class="text-[10px] uppercase font-bold text-slate-400">Marriage Anniversary</p><p class="text-xs font-bold text-rose-300 mt-1">${mar ? pretty(mar.anniversarydate) : 'Not on record'}</p><p class="text-[10px] text-slate-400">${mar ? yearsCompleted(mar.anniversarydate) + ' yrs' : 'HR import required'}</p></div>
+        </div>
+        <div class="p-4 rounded-2xl bg-white/5 border border-white/5">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Recent Punch Log (Local Fallback - Limited)</h4>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead><tr class="border-b border-white/10 text-slate-400 font-semibold uppercase">
+                <th class="py-2 px-3">Date</th><th class="py-2 px-3">Day</th><th class="py-2 px-3">In</th><th class="py-2 px-3">Out</th><th class="py-2 px-3">Hrs</th><th class="py-2 px-3">Status</th>
+              </tr></thead>
+              <tbody class="divide-y divide-white/5">${rows}</tbody>
+            </table>
+          </div>
+        </div>`;
+    });
 }
 
 /* =========================================================================
@@ -3512,7 +4937,7 @@ function exportCSV(kind){
 function buildMobileNav(role, active){
   const items = role === 'emp'
     ? [['overview','fa-gauge-high','Home'],['attendance','fa-calendar-check','Attendance'],['leave','fa-plane-departure','Leave'],['reports','fa-chart-column','Reports'],['profile','fa-user','Profile']]
-    : [['hrOverview','fa-th-large','Overview'],['hrAllEmp','fa-users','Staff'],['hrCategory','fa-layer-group','Analytics'],['hrCelebrations','fa-cake-candles','Events'],['hrMarriage','fa-file-excel','Import']];
+    : [['hrOverview','fa-th-large','Overview'],['hrAllEmp','fa-users','Staff'],['hrCategory','fa-layer-group','Analytics'],['hrCelebrations','fa-cake-candles','Events'],['hrMarriage','fa-file-excel','Import'],['hrEmail','fa-envelope','Email']];
   const nav = document.getElementById('mobileNav');
   nav.innerHTML = '';
   items.forEach(([key, icon, label]) => {
