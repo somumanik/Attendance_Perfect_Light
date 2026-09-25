@@ -17,7 +17,7 @@ import {
 } from './email-provider.js';
 
 const app = express();
-const port = Number(process.env.API_PORT || 4000);
+const PORT = process.env.PORT || process.env.API_PORT || 4000;
 const marriageTable = process.env.HR_MARRIAGE_TABLE || 'dbo.HR_MarriageAnniversary';
 const jwtSecret = process.env.JWT_SECRET;
 const hrUsername = process.env.HR_USERNAME;
@@ -2483,11 +2483,11 @@ app.get('/api/email/log', requireDbConfig, authenticate, requireRole('HR'), asyn
 });
 // EADDRINUSE ko crash ki jagah clear message banao: user ko exact fix command batao.
 // (npm run server dobara chalane se pehle purana node process band karna hota hai.)
-const server = app.listen(port, () => console.log(`Attendance API listening on port ${port}`));
+const server = app.listen(PORT, '0.0.0.0', () => console.log(`Attendance API listening on port ${PORT}`));
 server.on('error', (error) => {
   if (error?.code === 'EADDRINUSE') {
-    console.error(`Port ${port} already in use. Stop the old server first, then retry:`);
-    console.error(`  npx kill-port ${port}   (or: Get-Process node | Stop-Process -Force)`);
+    console.error(`Port ${PORT} already in use. Stop the old server first, then retry:`);
+    console.error(`  npx kill-port ${PORT}   (or: Get-Process node | Stop-Process -Force)`);
     console.error(`  npm run server`);
     process.exitCode = 1;
     return;
